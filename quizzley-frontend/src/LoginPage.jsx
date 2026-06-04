@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { GoogleLogin } from '@react-oauth/google';
+import { auth } from "./firebase";// adjust path if needed
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+
+
+
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -60,30 +64,28 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setError(null);
-    setSuccess(null);
-    setLoading(true);
-
+  const handleGoogleLogin = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/auth/google', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken: credentialResponse.credential }),
-      });
+      setLoading(true);
+      setError(null);
 
-      if (!response.ok) {
-        throw new Error('Google Authentication rejected by backend');
-      }
+      const provider = new GoogleAuthProvider();
 
-      const data = await response.json();
-      setSuccess(`Google Login Successful! User Role: ${data.role}`);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('role', data.role);
-    } catch (err) {
-      setError(err.message || 'Google Login failed on backend token verification.');
+      const result = await signInWithPopup(auth, provider);
+
+      const user = result.user;
+
+      setSuccess(`Welcome ${user.displayName}`);
+
+      localStorage.setItem("userEmail", user.email);
+      localStorage.setItem("userName", user.displayName);
+      localStorage.setItem("userUid", user.uid);
+
+      console.log(user);
+
+    } catch (error) {
+      console.error(error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -317,34 +319,27 @@ export default function LoginPage() {
           </div>
 
           {/* Social Row */}
-          <div className="flex items-center justify-center mb-6">
-            
-            {/* Google Squircle Icon Button Container */}
-            <div className="w-[56px] h-[56px] flex items-center justify-center bg-white border border-[#D6D6E0] rounded-[18px] shadow-sm hover:bg-slate-50 hover:border-slate-400 transition-all overflow-hidden relative cursor-pointer">
-              <div className="opacity-0 absolute inset-0 z-10 scale-150 cursor-pointer">
-                <GoogleLogin
-                  type="icon"
-                  shape="square"
-                  size="large"
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => setError('Google Login Failed')}
-                />
-              </div>
-              <svg className="w-6 h-6 z-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+          <div className="flex items-center justify-center mb-6 w-full">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="w-full border border-slate-300 rounded-xl py-3 px-4 bg-white hover:bg-slate-50 transition font-medium text-slate-700 flex items-center justify-center"
+              aria-label="Sign in with Google"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
+                <path fill="#4285F4" d="M21.805 10.023H12v4.01h5.27c-.23 1.19-.89 2.2-1.89 2.88v2.39h3.06c1.79-1.65 2.82-4.08 2.82-6.97 0-.68-.06-1.33-.18-1.96z" />
+                <path fill="#34A853" d="M12 22c2.55 0 4.69-.84 6.25-2.29l-3.06-2.39c-.85.57-1.94.91-3.19.91-2.45 0-4.53-1.66-5.28-3.89H3.56v2.45A10 10 0 0 0 12 22z" />
+                <path fill="#FBBC05" d="M6.72 14.34A6.01 6.01 0 0 1 6.72 9.66V7.21H3.56a10 10 0 0 0 0 7.13l3.16-2.5z" />
+                <path fill="#EA4335" d="M12 6.09c1.38 0 2.62.47 3.59 1.39l2.69-2.69C16.68 3.4 14.55 2.5 12 2.5A10 10 0 0 0 3.56 7.21l3.16 2.45C7.47 7.75 9.55 6.09 12 6.09z" />
               </svg>
-            </div>
-            
+            </button>
           </div>
 
         </div>
 
         {/* Footer Text */}
         <p className="text-[10px] text-slate-400 text-center leading-relaxed max-w-sm mx-auto">
-         Welcome to Quizzly. You can access a library of Past papers, Mock exams and Practice Quizzes through our platform.
+          Welcome to Quizzly. You can access a library of Past papers, Mock exams and Practice Quizzes through our platform.
         </p>
 
       </div>
