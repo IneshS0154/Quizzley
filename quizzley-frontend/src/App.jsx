@@ -1,10 +1,99 @@
-import React from 'react';
+import React, { useState } from 'react';
 import LoginPage from './LoginPage';
+import Sidebar from './components/Sidebar';
+import DashboardPage from './components/DashboardPage';
+import MyQuizzesPage from './components/MyQuizzesPage';
+import ResultsPage from './components/ResultsPage';
+import ViewResultPage from './components/ViewResultPage';
+import ProfilePage from './components/ProfilePage';
+import AdminDashboardPage from './components/AdminDashboardPage';
+import AdminAnalyticsPage from './components/AdminAnalyticsPage';
+import AdminQuizzesPage from './components/AdminQuizzesPage';
+import AdminUsersPage from './components/AdminUsersPage';
+import AdminNotificationsPage from './components/AdminNotificationsPage';
+import AdminSettingsPage from './components/AdminSettingsPage';
 
 function App() {
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [role, setRole] = useState(localStorage.getItem('role') || 'STUDENT');
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [lastResult, setLastResult] = useState(null);
+
+  const handleLoginSuccess = (newToken, newRole) => {
+    setToken(newToken);
+    setRole(newRole || localStorage.getItem('role') || 'STUDENT');
+    setCurrentPage('dashboard');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    setToken(null);
+    setRole('STUDENT');
+    setCurrentPage('dashboard');
+  };
+
+  if (!token) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
-    <div>
-      <LoginPage />
+    <div className="min-h-screen flex bg-slate-50 text-slate-800">
+      {/* Sidebar Navigation */}
+      <Sidebar 
+        currentPage={currentPage} 
+        setCurrentPage={setCurrentPage} 
+        onLogout={handleLogout} 
+        role={role}
+      />
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        {currentPage === 'dashboard' && (
+          role === 'ADMIN' ? (
+            <AdminDashboardPage setCurrentPage={setCurrentPage} />
+          ) : (
+            <DashboardPage setCurrentPage={setCurrentPage} />
+          )
+        )}
+        {currentPage === 'quizzes' && (
+          role === 'ADMIN' ? (
+            <AdminQuizzesPage setCurrentPage={setCurrentPage} />
+          ) : (
+            <MyQuizzesPage 
+              setCurrentPage={setCurrentPage} 
+              setLastResult={setLastResult} 
+            />
+          )
+        )}
+        {currentPage === 'results' && (
+          <ResultsPage 
+            setCurrentPage={setCurrentPage} 
+            lastResult={lastResult} 
+          />
+        )}
+        {currentPage === 'view-result' && (
+          <ViewResultPage 
+            setCurrentPage={setCurrentPage} 
+            lastResult={lastResult} 
+          />
+        )}
+        {currentPage === 'profile' && (
+          <ProfilePage />
+        )}
+        {currentPage === 'users' && role === 'ADMIN' && (
+          <AdminUsersPage setCurrentPage={setCurrentPage} />
+        )}
+        {currentPage === 'analytics' && role === 'ADMIN' && (
+          <AdminAnalyticsPage setCurrentPage={setCurrentPage} />
+        )}
+        {currentPage === 'notifications' && role === 'ADMIN' && (
+          <AdminNotificationsPage />
+        )}
+        {currentPage === 'settings' && role === 'ADMIN' && (
+          <AdminSettingsPage />
+        )}
+      </main>
     </div>
   );
 }

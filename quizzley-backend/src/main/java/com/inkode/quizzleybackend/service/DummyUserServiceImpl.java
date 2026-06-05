@@ -23,19 +23,11 @@ public class DummyUserServiceImpl implements UserService {
     public DummyUserServiceImpl() {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         
-        // Seed default credentials for testing and development
-        mockUsers.put("user@example.com", new User(
-                "user@example.com",
-                "Regular User",
-                "USER",
-                encoder.encode("password")
-        ));
-        
-        mockUsers.put("admin@example.com", new User(
-                "admin@example.com",
-                "Administrator",
+        mockUsers.put("admin@quizzley.com", new User(
+                "admin@quizzley.com",
+                "System Admin",
                 "ADMIN",
-                encoder.encode("adminpassword")
+                encoder.encode("admin123")
         ));
     }
 
