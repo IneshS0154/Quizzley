@@ -6,14 +6,22 @@ import MyQuizzesPage from './components/MyQuizzesPage';
 import ResultsPage from './components/ResultsPage';
 import ViewResultPage from './components/ViewResultPage';
 import ProfilePage from './components/ProfilePage';
+import AdminDashboardPage from './components/AdminDashboardPage';
+import AdminAnalyticsPage from './components/AdminAnalyticsPage';
+import AdminQuizzesPage from './components/AdminQuizzesPage';
+import AdminUsersPage from './components/AdminUsersPage';
+import AdminNotificationsPage from './components/AdminNotificationsPage';
+import AdminSettingsPage from './components/AdminSettingsPage';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [role, setRole] = useState(localStorage.getItem('role') || 'STUDENT');
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [lastResult, setLastResult] = useState(null);
 
-  const handleLoginSuccess = (newToken) => {
+  const handleLoginSuccess = (newToken, newRole) => {
     setToken(newToken);
+    setRole(newRole || localStorage.getItem('role') || 'STUDENT');
     setCurrentPage('dashboard');
   };
 
@@ -21,6 +29,7 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     setToken(null);
+    setRole('STUDENT');
     setCurrentPage('dashboard');
   };
 
@@ -35,18 +44,27 @@ function App() {
         currentPage={currentPage} 
         setCurrentPage={setCurrentPage} 
         onLogout={handleLogout} 
+        role={role}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {currentPage === 'dashboard' && (
-          <DashboardPage setCurrentPage={setCurrentPage} />
+          role === 'ADMIN' ? (
+            <AdminDashboardPage setCurrentPage={setCurrentPage} />
+          ) : (
+            <DashboardPage setCurrentPage={setCurrentPage} />
+          )
         )}
         {currentPage === 'quizzes' && (
-          <MyQuizzesPage 
-            setCurrentPage={setCurrentPage} 
-            setLastResult={setLastResult} 
-          />
+          role === 'ADMIN' ? (
+            <AdminQuizzesPage setCurrentPage={setCurrentPage} />
+          ) : (
+            <MyQuizzesPage 
+              setCurrentPage={setCurrentPage} 
+              setLastResult={setLastResult} 
+            />
+          )
         )}
         {currentPage === 'results' && (
           <ResultsPage 
@@ -62,6 +80,18 @@ function App() {
         )}
         {currentPage === 'profile' && (
           <ProfilePage />
+        )}
+        {currentPage === 'users' && role === 'ADMIN' && (
+          <AdminUsersPage setCurrentPage={setCurrentPage} />
+        )}
+        {currentPage === 'analytics' && role === 'ADMIN' && (
+          <AdminAnalyticsPage setCurrentPage={setCurrentPage} />
+        )}
+        {currentPage === 'notifications' && role === 'ADMIN' && (
+          <AdminNotificationsPage />
+        )}
+        {currentPage === 'settings' && role === 'ADMIN' && (
+          <AdminSettingsPage />
         )}
       </main>
     </div>

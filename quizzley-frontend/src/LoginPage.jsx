@@ -74,6 +74,18 @@ export default function LoginPage({ onLoginSuccess }) {
     }
 
     try {
+      // Check for predefined admin credentials
+      if (email === 'admin@quizzley.com' && password === 'admin123') {
+        setSuccess(`Signed in successfully! User Role: ADMIN`);
+        localStorage.setItem('token', 'mock-token-admin');
+        localStorage.setItem('role', 'ADMIN');
+        if (onLoginSuccess) {
+          onLoginSuccess('mock-token-admin', 'ADMIN');
+        }
+        setLoading(false);
+        return;
+      }
+
       // First try to authenticate against the locally signed-up users in localStorage
       const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
       const localUser = mockUsers.find(u => u.email === email && u.password === password);
@@ -83,7 +95,7 @@ export default function LoginPage({ onLoginSuccess }) {
         localStorage.setItem('token', 'mock-token-' + localUser.email);
         localStorage.setItem('role', localUser.role);
         if (onLoginSuccess) {
-          onLoginSuccess('mock-token-' + localUser.email);
+          onLoginSuccess('mock-token-' + localUser.email, localUser.role);
         }
         setLoading(false);
         return;
@@ -107,7 +119,7 @@ export default function LoginPage({ onLoginSuccess }) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
       if (onLoginSuccess) {
-        onLoginSuccess(data.token);
+        onLoginSuccess(data.token, data.role);
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please verify that the backend is running.');
@@ -139,7 +151,7 @@ export default function LoginPage({ onLoginSuccess }) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
       if (onLoginSuccess) {
-        onLoginSuccess(data.token);
+        onLoginSuccess(data.token, data.role);
       }
     } catch (err) {
       setError(err.message || 'Google Login failed on backend token verification.');
