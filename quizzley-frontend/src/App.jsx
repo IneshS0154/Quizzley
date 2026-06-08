@@ -50,15 +50,17 @@ function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {currentPage === 'dashboard' && (
-          role === 'ADMIN' ? (
-            <AdminDashboardPage setCurrentPage={setCurrentPage} />
+          (role === 'ADMIN' || role === 'QUIZ_MANAGER') ? (
+            <AdminDashboardPage setCurrentPage={setCurrentPage} role={role} />
           ) : (
             <DashboardPage setCurrentPage={setCurrentPage} />
           )
         )}
         {currentPage === 'quizzes' && (
-          role === 'ADMIN' ? (
+          role === 'QUIZ_MANAGER' ? (
             <AdminQuizzesPage setCurrentPage={setCurrentPage} />
+          ) : role === 'ADMIN' ? (
+            <div className="p-8 text-slate-500 font-semibold text-sm">Quizzes are managed in the Quiz Manager portal.</div>
           ) : (
             <MyQuizzesPage 
               setCurrentPage={setCurrentPage} 
@@ -81,16 +83,16 @@ function App() {
         {currentPage === 'profile' && (
           <ProfilePage />
         )}
-        {currentPage === 'users' && role === 'ADMIN' && (
+        {currentPage === 'users' && (role === 'ADMIN' || role === 'QUIZ_MANAGER') && (
           <AdminUsersPage setCurrentPage={setCurrentPage} />
         )}
-        {currentPage === 'analytics' && role === 'ADMIN' && (
+        {currentPage === 'analytics' && (role === 'ADMIN' || role === 'QUIZ_MANAGER') && (
           <AdminAnalyticsPage setCurrentPage={setCurrentPage} />
         )}
-        {currentPage === 'notifications' && role === 'ADMIN' && (
+        {currentPage === 'notifications' && (role === 'ADMIN' || role === 'QUIZ_MANAGER') && (
           <AdminNotificationsPage />
         )}
-        {currentPage === 'settings' && role === 'ADMIN' && (
+        {currentPage === 'settings' && (role === 'ADMIN' || role === 'QUIZ_MANAGER') && (
           <AdminSettingsPage />
         )}
       </main>
