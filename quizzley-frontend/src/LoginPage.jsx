@@ -1,22 +1,14 @@
 import React, { useState } from 'react';
-import { auth } from "./firebase";// adjust path if needed
+import { auth } from "./firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-
-
-
 
 export default function LoginPage({ onLoginSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Form fields state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [signupRole, setSignupRole] = useState('STUDENT'); // 'STUDENT' or 'QUIZ_MANAGER'
-  
-  // Feedback states
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -60,107 +52,41 @@ export default function LoginPage({ onLoginSuccess }) {
         return;
       }
 
-      // Save user to mock list in localStorage
       const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
       if (mockUsers.some(u => u.email === email)) {
         setError("User with this email already exists.");
         setLoading(false);
         return;
       }
-      
-      const formattedDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit'
-      });
-
-      if (signupRole === 'QUIZ_MANAGER') {
-        mockUsers.push({ 
-          email, 
-          password, 
-          fullName, 
-          phoneNumber, 
-          role: 'QUIZ_MANAGER', 
-          status: 'PENDING',
-          department: 'Mathematics',
-          dateJoined: formattedDate,
-          averageScore: '—'
-        });
-      } else {
-        mockUsers.push({ 
-          email, 
-          password, 
-          fullName, 
-          phoneNumber, 
-          role: 'STUDENT', 
-          status: 'ACTIVE',
-          department: 'General',
-          dateJoined: formattedDate,
-          averageScore: '—'
-        });
-      }
-      
+      mockUsers.push({ email, password, fullName, phoneNumber, role: 'STUDENT' });
       localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
 
       setTimeout(() => {
-        if (signupRole === 'QUIZ_MANAGER') {
-          setSuccess("Account created successfully! Your Quiz Manager registration is pending administrator approval.");
-        } else {
-          setSuccess("Account created successfully! Please sign in using your credentials.");
-        }
-        setIsSignUp(false); // Redirect to Sign In!
+        setSuccess("Account created successfully! Please sign in using your credentials.");
+        setIsSignUp(false);
         setLoading(false);
       }, 1000);
       return;
     }
 
     try {
-      // Check for predefined admin credentials
-      if (email === 'admin@quizzley.com' && password === 'admin123') {
-        setSuccess(`Signed in successfully! User Role: ADMIN`);
-        localStorage.setItem('token', 'mock-token-admin');
-        localStorage.setItem('role', 'ADMIN');
-        if (onLoginSuccess) {
-          onLoginSuccess('mock-token-admin', 'ADMIN');
-        }
-        setLoading(false);
-        return;
-      }
-
-      // First try to authenticate against the locally signed-up users in localStorage
       const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
       const localUser = mockUsers.find(u => u.email === email && u.password === password);
-      
+
       if (localUser) {
-        if (localUser.role === 'QUIZ_MANAGER') {
-          if (localUser.status === 'PENDING') {
-            setError("Your Quiz Manager registration is pending admin approval.");
-            setLoading(false);
-            return;
-          }
-          if (localUser.status === 'DENIED') {
-            setError("Your Quiz Manager registration has been denied by the system administrator.");
-            setLoading(false);
-            return;
-          }
-        }
-        
         setSuccess(`Signed in successfully! User Role: ${localUser.role}`);
         localStorage.setItem('token', 'mock-token-' + localUser.email);
         localStorage.setItem('role', localUser.role);
         if (onLoginSuccess) {
-          onLoginSuccess('mock-token-' + localUser.email, localUser.role);
+          onLoginSuccess('mock-token-' + localUser.email);
         }
         setLoading(false);
         return;
       }
 
-      // Fall back to the actual backend API call
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -173,7 +99,7 @@ export default function LoginPage({ onLoginSuccess }) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
       if (onLoginSuccess) {
-        onLoginSuccess(data.token, data.role);
+        onLoginSuccess(data.token);
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please verify that the backend is running.');
@@ -182,19 +108,28 @@ export default function LoginPage({ onLoginSuccess }) {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
 
-      const provider = new GoogleAuthProvider();
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: credentialResponse.credential }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Google Authentication rejected by backend');
+      }
 
       const data = await response.json();
       setSuccess(`Google Login Successful! User Role: ${data.role}`);
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
       if (onLoginSuccess) {
-        onLoginSuccess(data.token, data.role);
+        onLoginSuccess(data.token);
       }
     } catch (err) {
       setError(err.message || 'Google Login failed on backend token verification.');
@@ -203,12 +138,27 @@ export default function LoginPage({ onLoginSuccess }) {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      await handleGoogleSuccess({ credential: idToken });
+    } catch (err) {
+      setError(err.message || 'Google Login failed.');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row overflow-hidden">
-      
+
       {/* Left Column: Forms */}
       <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 sm:p-12 lg:p-16 bg-white min-h-screen">
-        
+
         {/* Brand Header */}
         <div className="flex items-center">
           <img src="/logo.png" alt="Quizzley" className="h-16 object-contain" />
@@ -216,33 +166,21 @@ export default function LoginPage({ onLoginSuccess }) {
 
         {/* Form Body Container */}
         <div className="my-auto py-8 max-w-md w-full mx-auto">
-          
+
           {/* Signin / Signup Pill Toggle */}
           <div className="flex bg-slate-100 p-1 rounded-xl mb-8 max-w-[280px]">
             <button
-              onClick={() => {
-                setIsSignUp(false);
-                setError(null);
-                setSuccess(null);
-              }}
+              onClick={() => { setIsSignUp(false); setError(null); setSuccess(null); }}
               className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all ${
-                !isSignUp 
-                  ? 'bg-white shadow text-slate-950' 
-                  : 'text-slate-500 hover:text-slate-800'
+                !isSignUp ? 'bg-white shadow text-slate-950' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Sign In
             </button>
             <button
-              onClick={() => {
-                setIsSignUp(true);
-                setError(null);
-                setSuccess(null);
-              }}
+              onClick={() => { setIsSignUp(true); setError(null); setSuccess(null); }}
               className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all ${
-                isSignUp 
-                  ? 'bg-white shadow text-slate-950' 
-                  : 'text-slate-500 hover:text-slate-800'
+                isSignUp ? 'bg-white shadow text-slate-950' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Signup
@@ -255,8 +193,8 @@ export default function LoginPage({ onLoginSuccess }) {
               {isSignUp ? 'Create Account' : 'Welcome Back'}
             </h2>
             <p className="text-sm text-slate-500 mt-2 font-medium">
-              {isSignUp 
-                ? 'Join Quizzley today to start your academic journey' 
+              {isSignUp
+                ? 'Join Quizzley today to start your academic journey'
                 : 'Welcome Back, Please enter Your details'}
             </p>
           </div>
@@ -281,38 +219,9 @@ export default function LoginPage({ onLoginSuccess }) {
 
           {/* Main Action Form */}
           <form onSubmit={handleFormSubmit} className="space-y-4">
-            
+
             {isSignUp && (
               <>
-                {/* Signup Role Selector */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Signup As</label>
-                  <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
-                    <button
-                      type="button"
-                      onClick={() => setSignupRole('STUDENT')}
-                      className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        signupRole === 'STUDENT'
-                          ? 'bg-white shadow text-slate-950 font-bold'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Student Signup
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSignupRole('QUIZ_MANAGER')}
-                      className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        signupRole === 'QUIZ_MANAGER'
-                          ? 'bg-white shadow text-slate-950 font-bold'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Management Signup
-                    </button>
-                  </div>
-                </div>
-
                 {/* Full Name Field */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Full Name</label>
@@ -322,8 +231,8 @@ export default function LoginPage({ onLoginSuccess }) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required={isSignUp}
@@ -342,8 +251,8 @@ export default function LoginPage({ onLoginSuccess }) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                     </div>
-                    <input 
-                      type="tel" 
+                    <input
+                      type="tel"
                       value={phoneNumber}
                       onChange={handlePhoneChange}
                       required={isSignUp}
@@ -357,17 +266,15 @@ export default function LoginPage({ onLoginSuccess }) {
 
             {/* Email Field */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-                Email Address
-              </label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Email Address</label>
               <div className="relative rounded-xl shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -401,8 +308,8 @@ export default function LoginPage({ onLoginSuccess }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
                   </svg>
                 </div>
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
+                <input
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -429,8 +336,8 @@ export default function LoginPage({ onLoginSuccess }) {
             </div>
 
             {/* Submit Button */}
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 transition-all text-sm flex items-center justify-center"
             >
@@ -439,11 +346,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-              ) : isSignUp ? (
-                'Create Account'
-              ) : (
-                'Continue'
-              )}
+              ) : isSignUp ? 'Create Account' : 'Continue'}
             </button>
           </form>
 
@@ -454,7 +357,7 @@ export default function LoginPage({ onLoginSuccess }) {
             <span className="h-px w-full bg-slate-200"></span>
           </div>
 
-          {/* Social Row */}
+          {/* Google Login Button */}
           <div className="flex items-center justify-center mb-6 w-full">
             <button
               type="button"
@@ -480,30 +383,25 @@ export default function LoginPage({ onLoginSuccess }) {
 
       </div>
 
-      {/* Right Column: Hero Image (Split Screen) */}
+      {/* Right Column: Hero Image */}
       <div className="hidden lg:block lg:w-[55%] relative h-screen">
-        
-        {/* Dynamic Background Image */}
-        <img 
-          src={isSignUp ? '/signup_hero.png' : '/signin_hero.png'} 
-          alt="Library background" 
+        <img
+          src={isSignUp ? '/signup_hero.png' : '/signin_hero.png'}
+          alt="Library background"
           className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out scale-100"
         />
-        
-        {/* Dark subtle overlay to keep text highly readable */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/40 to-slate-950/10 flex flex-col justify-end p-16">
           <div className="text-white max-w-xl transition-all duration-500 ease-in-out">
             <h3 className="text-3xl font-bold leading-tight tracking-tight mb-3">
               {isSignUp ? 'Empowering your academic excellence' : 'Unlock Your Potential with Quizzley'}
             </h3>
             <p className="text-slate-200 text-sm font-medium leading-relaxed">
-              {isSignUp 
-                ? 'Join our community of lifelong learners and achieve your goals with Quizzley.' 
+              {isSignUp
+                ? 'Join our community of lifelong learners and achieve your goals with Quizzley.'
                 : 'Access your personalized dashboard, track your quiz performance, and make informed learning decisions.'}
             </p>
           </div>
         </div>
-
       </div>
 
     </div>
