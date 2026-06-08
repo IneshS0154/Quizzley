@@ -5,7 +5,7 @@ import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 
 
-export default function LoginPage() {
+export default function LoginPage({ onLoginSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
@@ -13,16 +13,28 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [studentId, setStudentId] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [signupRole, setSignupRole] = useState('STUDENT'); // 'STUDENT' or 'QUIZ_MANAGER'
   
   // Feedback states
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Validate email pattern to display the green checkmark
   const isValidEmail = (val) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  };
+
+  const handlePhoneChange = (e) => {
+    const val = e.target.value;
+    setPhoneNumber(val);
+    if (val && !/^\d*$/.test(val)) {
+      setError("Phone number must contain only numbers.");
+    } else if (val.length > 10) {
+      setError("Phone number cannot be greater than 10 digits.");
+    } else {
+      setError(null);
+    }
   };
 
   const handleFormSubmit = async (e) => {
@@ -32,15 +44,118 @@ export default function LoginPage() {
     setLoading(true);
 
     if (isSignUp) {
-      // Mock registration submission to give user feedback
+      if (phoneNumber && !/^\d+$/.test(phoneNumber)) {
+        setError("Phone number must contain only numbers.");
+        setLoading(false);
+        return;
+      }
+      if (phoneNumber.length > 10) {
+        setError("Phone number cannot be greater than 10 digits.");
+        setLoading(false);
+        return;
+      }
+      if (phoneNumber.length < 10) {
+        setError("Phone number must be exactly 10 digits.");
+        setLoading(false);
+        return;
+      }
+
+      // Save user to mock list in localStorage
+      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
+      if (mockUsers.some(u => u.email === email)) {
+        setError("User with this email already exists.");
+        setLoading(false);
+        return;
+      }
+      
+      const formattedDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+      });
+
+      if (signupRole === 'QUIZ_MANAGER') {
+        mockUsers.push({ 
+          email, 
+          password, 
+          fullName, 
+          phoneNumber, 
+          role: 'QUIZ_MANAGER', 
+          status: 'PENDING',
+          department: 'Mathematics',
+          dateJoined: formattedDate,
+          averageScore: '—'
+        });
+      } else {
+        mockUsers.push({ 
+          email, 
+          password, 
+          fullName, 
+          phoneNumber, 
+          role: 'STUDENT', 
+          status: 'ACTIVE',
+          department: 'General',
+          dateJoined: formattedDate,
+          averageScore: '—'
+        });
+      }
+      
+      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+
       setTimeout(() => {
-        setSuccess("Registration mock success! The database developer will integrate saving student accounts soon.");
+        if (signupRole === 'QUIZ_MANAGER') {
+          setSuccess("Account created successfully! Your Quiz Manager registration is pending administrator approval.");
+        } else {
+          setSuccess("Account created successfully! Please sign in using your credentials.");
+        }
+        setIsSignUp(false); // Redirect to Sign In!
         setLoading(false);
       }, 1000);
       return;
     }
 
     try {
+      // Check for predefined admin credentials
+      if (email === 'admin@quizzley.com' && password === 'admin123') {
+        setSuccess(`Signed in successfully! User Role: ADMIN`);
+        localStorage.setItem('token', 'mock-token-admin');
+        localStorage.setItem('role', 'ADMIN');
+        if (onLoginSuccess) {
+          onLoginSuccess('mock-token-admin', 'ADMIN');
+        }
+        setLoading(false);
+        return;
+      }
+
+      // First try to authenticate against the locally signed-up users in localStorage
+      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
+      const localUser = mockUsers.find(u => u.email === email && u.password === password);
+      
+      if (localUser) {
+        if (localUser.role === 'QUIZ_MANAGER') {
+          if (localUser.status === 'PENDING') {
+            setError("Your Quiz Manager registration is pending admin approval.");
+            setLoading(false);
+            return;
+          }
+          if (localUser.status === 'DENIED') {
+            setError("Your Quiz Manager registration has been denied by the system administrator.");
+            setLoading(false);
+            return;
+          }
+        }
+        
+        setSuccess(`Signed in successfully! User Role: ${localUser.role}`);
+        localStorage.setItem('token', 'mock-token-' + localUser.email);
+        localStorage.setItem('role', localUser.role);
+        if (onLoginSuccess) {
+          onLoginSuccess('mock-token-' + localUser.email, localUser.role);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Fall back to the actual backend API call
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: {
@@ -57,6 +172,9 @@ export default function LoginPage() {
       setSuccess(`Signed in successfully! User Role: ${data.role}`);
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
+      if (onLoginSuccess) {
+        onLoginSuccess(data.token, data.role);
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please verify that the backend is running.');
     } finally {
@@ -71,21 +189,15 @@ export default function LoginPage() {
 
       const provider = new GoogleAuthProvider();
 
-      const result = await signInWithPopup(auth, provider);
-
-      const user = result.user;
-
-      setSuccess(`Welcome ${user.displayName}`);
-
-      localStorage.setItem("userEmail", user.email);
-      localStorage.setItem("userName", user.displayName);
-      localStorage.setItem("userUid", user.uid);
-
-      console.log(user);
-
-    } catch (error) {
-      console.error(error);
-      setError(error.message);
+      const data = await response.json();
+      setSuccess(`Google Login Successful! User Role: ${data.role}`);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
+      if (onLoginSuccess) {
+        onLoginSuccess(data.token, data.role);
+      }
+    } catch (err) {
+      setError(err.message || 'Google Login failed on backend token verification.');
     } finally {
       setLoading(false);
     }
@@ -98,12 +210,8 @@ export default function LoginPage() {
       <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 sm:p-12 lg:p-16 bg-white min-h-screen">
         
         {/* Brand Header */}
-        <div className="flex items-center space-x-2">
-          <svg className="w-7 h-7 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2L1 7l11 5 9-4.09V17h2V7L12 2z" />
-            <path d="M4.14 11.17l-.14-.07V17c0 1.66 3.58 3 8 3s8-1.34 8-3v-5.9l-.14.07C17.76 12.11 15 13 12 13s-5.76-.89-7.86-1.83z" />
-          </svg>
-          <span className="text-xl font-bold text-slate-900 tracking-tight">Quizzley</span>
+        <div className="flex items-center">
+          <img src="/logo.png" alt="Quizzley" className="h-16 object-contain" />
         </div>
 
         {/* Form Body Container */}
@@ -176,6 +284,35 @@ export default function LoginPage() {
             
             {isSignUp && (
               <>
+                {/* Signup Role Selector */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Signup As</label>
+                  <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setSignupRole('STUDENT')}
+                      className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        signupRole === 'STUDENT'
+                          ? 'bg-white shadow text-slate-950 font-bold'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Student Signup
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSignupRole('QUIZ_MANAGER')}
+                      className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        signupRole === 'QUIZ_MANAGER'
+                          ? 'bg-white shadow text-slate-950 font-bold'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Management Signup
+                    </button>
+                  </div>
+                </div>
+
                 {/* Full Name Field */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Full Name</label>
@@ -196,23 +333,22 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Student ID Field */}
+                {/* Phone Number Field */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Student ID</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Phone Number</label>
                   <div className="relative rounded-xl shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <rect x="3" y="4" width="18" height="16" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m-4 4h6" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                     </div>
                     <input 
-                      type="text" 
-                      value={studentId}
-                      onChange={(e) => setStudentId(e.target.value)}
+                      type="tel" 
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
                       required={isSignUp}
                       className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 focus:outline-none transition-all text-sm"
-                      placeholder="Student ID"
+                      placeholder="Phone Number"
                     />
                   </div>
                 </div>
@@ -222,7 +358,7 @@ export default function LoginPage() {
             {/* Email Field */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">
-                {isSignUp ? 'University Email' : 'Email Address'}
+                Email Address
               </label>
               <div className="relative rounded-xl shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -279,13 +415,13 @@ export default function LoginPage() {
                   className="absolute inset-y-0 right-0 pr-4 flex items-center focus:outline-none"
                 >
                   {showPassword ? (
-                    <svg className="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                    <svg className="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
                     </svg>
                   ) : (
-                    <svg className="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    <svg className="w-5 h-5 text-slate-400 hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.43 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                      <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   )}
                 </button>
