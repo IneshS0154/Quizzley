@@ -70,6 +70,18 @@ export default function LoginPage({ onLoginSuccess }) {
     }
 
     try {
+      // Check for predefined admin credentials
+      if (email === 'admin@quizzley.com' && password === 'admin123') {
+        setSuccess(`Signed in successfully! User Role: ADMIN`);
+        localStorage.setItem('token', 'mock-token-admin');
+        localStorage.setItem('role', 'ADMIN');
+        if (onLoginSuccess) {
+          onLoginSuccess('mock-token-admin', 'ADMIN');
+        }
+        setLoading(false);
+        return;
+      }
+
       const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
       const localUser = mockUsers.find(u => u.email === email && u.password === password);
 
