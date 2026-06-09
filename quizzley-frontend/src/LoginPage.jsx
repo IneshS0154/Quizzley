@@ -10,7 +10,7 @@ export default function LoginPage({ onLoginSuccess }) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [signupRole, setSignupRole] = useState('STUDENT'); // 'STUDENT' or 'QUIZ_MANAGER'
+  const signupRole = 'STUDENT';
   
   // Feedback states
   const [error, setError] = useState(null);
@@ -70,40 +70,22 @@ export default function LoginPage({ onLoginSuccess }) {
         day: '2-digit'
       });
 
-      if (signupRole === 'QUIZ_MANAGER') {
-        mockUsers.push({ 
-          email, 
-          password, 
-          fullName, 
-          phoneNumber, 
-          role: 'QUIZ_MANAGER', 
-          status: 'PENDING',
-          department: 'Mathematics',
-          dateJoined: formattedDate,
-          averageScore: '—'
-        });
-      } else {
-        mockUsers.push({ 
-          email, 
-          password, 
-          fullName, 
-          phoneNumber, 
-          role: 'STUDENT', 
-          status: 'ACTIVE',
-          department: 'General',
-          dateJoined: formattedDate,
-          averageScore: '—'
-        });
-      }
+      mockUsers.push({ 
+        email, 
+        password, 
+        fullName, 
+        phoneNumber, 
+        role: 'STUDENT', 
+        status: 'ACTIVE',
+        department: 'General',
+        dateJoined: formattedDate,
+        averageScore: '—'
+      });
       
       localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
 
       setTimeout(() => {
-        if (signupRole === 'QUIZ_MANAGER') {
-          setSuccess("Account created successfully! Your Quiz Manager registration is pending administrator approval.");
-        } else {
-          setSuccess("Account created successfully! Please sign in using your credentials.");
-        }
+        setSuccess("Account created successfully! Please sign in using your credentials.");
         setIsSignUp(false); // Redirect to Sign In!
         setLoading(false);
       }, 1000);
@@ -291,35 +273,6 @@ export default function LoginPage({ onLoginSuccess }) {
             
             {isSignUp && (
               <>
-                {/* Signup Role Selector */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Signup As</label>
-                  <div className="flex bg-slate-100 p-1 rounded-xl mb-4">
-                    <button
-                      type="button"
-                      onClick={() => setSignupRole('STUDENT')}
-                      className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        signupRole === 'STUDENT'
-                          ? 'bg-white shadow text-slate-950 font-bold'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Student Signup
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSignupRole('QUIZ_MANAGER')}
-                      className={`flex-1 py-2 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        signupRole === 'QUIZ_MANAGER'
-                          ? 'bg-white shadow text-slate-950 font-bold'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      Management Signup
-                    </button>
-                  </div>
-                </div>
-
                 {/* Full Name Field */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Full Name</label>

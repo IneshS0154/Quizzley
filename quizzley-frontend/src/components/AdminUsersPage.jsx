@@ -68,32 +68,13 @@ export default function AdminUsersPage() {
     setUsers(finalUsers);
   }, []);
 
-  // Handler to approve a pending Quiz Manager
-  const handleApprove = (email) => {
-    const updatedUsers = users.map(user => {
-      if (user.email === email) {
-        return { ...user, status: 'ACTIVE' };
-      }
-      return user;
-    });
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-  };
 
-  // Handler to deny a pending Quiz Manager
-  const handleDeny = (email) => {
-    const updatedUsers = users.map(user => {
-      if (user.email === email) {
-        return { ...user, status: 'DENIED' };
-      }
-      return user;
-    });
-    localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-  };
 
   // Filter logic
   const filteredUsers = users.filter(user => {
+    if (user.role === 'QUIZ_MANAGER') {
+      return false;
+    }
     const matchesSearch = 
       (user.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -166,7 +147,6 @@ export default function AdminUsersPage() {
               >
                 <option value="ALL">All Roles</option>
                 <option value="STUDENT">Students</option>
-                <option value="QUIZ_MANAGER">Quiz Managers</option>
                 <option value="ADMIN">Admins</option>
               </select>
               <span className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-slate-400">
@@ -269,32 +249,15 @@ export default function AdminUsersPage() {
 
                         {/* Actions Column */}
                         <td className="px-6 py-4 text-right">
-                          {user.role === 'QUIZ_MANAGER' && user.status === 'PENDING' ? (
-                            <div className="flex items-center justify-end space-x-2">
-                              <button 
-                                onClick={() => handleApprove(user.email)}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
-                              >
-                                Approve
-                              </button>
-                              <button 
-                                onClick={() => handleDeny(user.email)}
-                                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer"
-                              >
-                                Deny
-                              </button>
-                            </div>
-                          ) : (
-                            <button 
-                              onClick={() => alert(`Edit capabilities for ${user.fullName} can be added here.`)}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors inline-flex items-center cursor-pointer"
-                            >
-                              {/* Edit Pencil Icon */}
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                          )}
+                          <button 
+                            onClick={() => alert(`Edit capabilities for ${user.fullName} can be added here.`)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors inline-flex items-center cursor-pointer"
+                          >
+                            {/* Edit Pencil Icon */}
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
                         </td>
                       </tr>
                     );
