@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function ProfilePage() {
   const role = localStorage.getItem('role') || 'STUDENT';
@@ -46,7 +46,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen flex flex-col">
+    <div className="flex-1 bg-slate-50 min-h-screen flex flex-col animate-fade-in-up">
       
       {/* Top Search & Profile Bar */}
       <header className="bg-white border-b border-slate-100 px-8 py-4 flex items-center justify-between shrink-0">
@@ -218,13 +218,13 @@ export default function ProfilePage() {
                     <button 
                       type="button" 
                       onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                      className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-all cursor-pointer active-spring"
                     >
                       Cancel
                     </button>
                     <button 
                       type="submit" 
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer active-spring"
                     >
                       Save Changes
                     </button>
@@ -278,7 +278,7 @@ export default function ProfilePage() {
 
                   <button 
                     onClick={() => setIsEditing(true)}
-                    className="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl shadow-sm inline-flex items-center space-x-1.5 transition-all cursor-pointer"
+                    className="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl shadow-sm inline-flex items-center space-x-1.5 transition-all cursor-pointer active-spring"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />

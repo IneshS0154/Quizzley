@@ -1,7 +1,143 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AdminQuizzesPage() {
-  const [quizzes, setQuizzes] = useState([]);
+  const [quizzes, setQuizzes] = useState(() => {
+    const localQuizzes = localStorage.getItem('mockQuizzes');
+    if (localQuizzes) {
+      return JSON.parse(localQuizzes);
+    }
+    const defaultQuizzes = [
+      {
+        id: 'q-1',
+        title: 'Midterm Assessment - Algebra',
+        assignedClass: '10 - A',
+        timeDate: 'Mar 12, 10:00-11:00 AM',
+        participation: '18 / 25',
+        status: 'Live',
+        duration: '60',
+        instructions: 'Please complete all questions. Non-programmable calculators are allowed. Show all steps for full marks.',
+        isAvailable: true,
+        questions: [
+          { id: 1, text: 'Solve for x: 3x + 12 = 27', options: ['x = 3', 'x = 5', 'x = 6', 'x = 9'], correctAnswer: 'x = 5' },
+          { id: 2, text: 'Factorise completely: x^2 - 9', options: ['(x-3)(x-3)', '(x+3)(x-3)', '(x+3)(x+3)', 'x(x-9)'], correctAnswer: '(x+3)(x-3)' }
+        ],
+        settings: { shuffleQuestions: true, showImmediateResults: true }
+      },
+      {
+        id: 'q-2',
+        title: 'Linear Equations - Practice',
+        assignedClass: '9 - A',
+        timeDate: '—',
+        participation: '—',
+        status: 'Draft',
+        duration: '45',
+        instructions: 'Practice questions on drawing linear equations and finding intercepts.',
+        isAvailable: false,
+        questions: [],
+        settings: { shuffleQuestions: false, showImmediateResults: true }
+      },
+      {
+        id: 'q-3',
+        title: 'Quadratic Equations Quiz',
+        assignedClass: '10 - B',
+        timeDate: 'Mar 13, 9:30-10:00 AM',
+        participation: '—',
+        status: 'Scheduled',
+        duration: '30',
+        instructions: 'Focus on finding roots using the quadratic formula.',
+        isAvailable: true,
+        questions: [
+          { id: 1, text: 'What is the quadratic formula?', options: ['x = (-b ± √(b^2-4ac))/2a', 'x = (b ± √(b^2-4ac))/2a', 'x = -b/2a', 'x = (a ± √(b^2-4ac))/2'], correctAnswer: 'x = (-b ± √(b^2-4ac))/2a' }
+        ],
+        settings: { shuffleQuestions: false, showImmediateResults: true }
+      },
+      {
+        id: 'q-4',
+        title: 'Weekly Math Practice - Week 4',
+        assignedClass: '9 - A',
+        timeDate: 'Mar 10, 2:30-3:00 PM',
+        participation: '19 / 30',
+        status: 'Completed',
+        duration: '30',
+        instructions: 'Revision of basic fractions, decimals, and percentage conversions.',
+        isAvailable: false,
+        questions: [],
+        settings: { shuffleQuestions: false, showImmediateResults: true }
+      },
+      {
+        id: 'q-5',
+        title: 'Trigonometry Basics Test',
+        assignedClass: '11 - A',
+        timeDate: 'Mar 8, 12:00-12:45 PM',
+        participation: '24 / 28',
+        status: 'Completed',
+        duration: '45',
+        instructions: 'Use sine, cosine, and tangent rules to find missing angles and lengths.',
+        isAvailable: false,
+        questions: [],
+        settings: { shuffleQuestions: true, showImmediateResults: false }
+      },
+      {
+        id: 'q-6',
+        title: 'Probability Concepts Quiz',
+        assignedClass: '11 - B',
+        timeDate: 'Mar 14, 11:00-11:30 AM',
+        participation: '—',
+        status: 'Scheduled',
+        duration: '30',
+        instructions: 'This quiz covers simple event probability, unions, and intersections.',
+        isAvailable: true,
+        questions: [],
+        settings: { shuffleQuestions: false, showImmediateResults: true }
+      },
+      {
+        id: 'q-7',
+        title: 'Polynomials - Revision Quiz',
+        assignedClass: '10 - A',
+        timeDate: '—',
+        participation: '—',
+        status: 'Draft',
+        duration: '50',
+        instructions: 'Perform addition, subtraction, multiplication, and synthetic division on polynomials.',
+        isAvailable: false,
+        questions: [],
+        settings: { shuffleQuestions: false, showImmediateResults: true }
+      },
+      {
+        id: 'q-8',
+        title: 'Mensuration Unit Test',
+        assignedClass: '9 - B',
+        timeDate: 'Mar 6, 10:00-10:40 AM',
+        participation: '—',
+        status: 'Completed',
+        duration: '40',
+        instructions: 'Calculate cylinder, cone, and sphere surface areas and volumes.',
+        isAvailable: false,
+        questions: [],
+        settings: { shuffleQuestions: false, showImmediateResults: true }
+      },
+      // 16 additional quizzes to show rich pagination and hit exactly 24
+      { id: 'q-9', title: 'Coordinate Geometry Basics', assignedClass: '9 - A', timeDate: 'Mar 4, 11:00-11:30 AM', participation: '28 / 30', status: 'Completed', duration: '30', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-10', title: 'Statistics - Central Tendency', assignedClass: '10 - A', timeDate: 'Mar 15, 1:00-1:45 PM', participation: '—', status: 'Scheduled', duration: '45', instructions: '', questions: [], isAvailable: true, settings: {} },
+      { id: 'q-11', title: 'Calculus Introduction', assignedClass: '11 - A', timeDate: '—', participation: '—', status: 'Draft', duration: '60', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-12', title: 'Arithmetic Progression Test', assignedClass: '10 - B', timeDate: 'Mar 2, 9:00-9:45 AM', participation: '22 / 25', status: 'Completed', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-13', title: 'Set Theory Concepts', assignedClass: '9 - B', timeDate: 'Mar 18, 10:00-10:30 AM', participation: '—', status: 'Scheduled', duration: '30', instructions: '', questions: [], isAvailable: true, settings: {} },
+      { id: 'q-14', title: 'Permutations & Combinations', assignedClass: '11 - B', timeDate: '—', participation: '—', status: 'Draft', duration: '40', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-15', title: 'Matrices and Determinants', assignedClass: '11 - A', timeDate: 'Feb 28, 2:00-3:00 PM', participation: '26 / 28', status: 'Completed', duration: '60', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-16', title: 'Euclidean Geometry Proofs', assignedClass: '9 - A', timeDate: 'Feb 26, 1:00-1:50 PM', participation: '29 / 30', status: 'Completed', duration: '50', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-17', title: 'Complex Numbers Introduction', assignedClass: '11 - B', timeDate: 'Mar 20, 11:30 AM-12:30 PM', participation: '—', status: 'Scheduled', duration: '60', instructions: '', questions: [], isAvailable: true, settings: {} },
+      { id: 'q-18', title: 'Vector Algebra Basics', assignedClass: '11 - A', timeDate: '—', participation: '—', status: 'Draft', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-19', title: 'Logarithms & Indices', assignedClass: '9 - B', timeDate: 'Feb 20, 10:00-10:45 AM', participation: '23 / 24', status: 'Completed', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-20', title: 'Ratios and Proportions', assignedClass: '9 - A', timeDate: 'Feb 18, 9:00-9:30 AM', participation: '30 / 30', status: 'Completed', duration: '30', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-21', title: 'Circles and Tangents', assignedClass: '10 - B', timeDate: 'Mar 22, 10:00-10:40 AM', participation: '—', status: 'Scheduled', duration: '40', instructions: '', questions: [], isAvailable: true, settings: {} },
+      { id: 'q-22', title: 'Probability Concepts Quiz II', assignedClass: '11 - B', timeDate: '—', participation: '—', status: 'Draft', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-23', title: 'Sequences and Series', assignedClass: '10 - A', timeDate: 'Feb 15, 11:00-11:50 AM', participation: '23 / 25', status: 'Completed', duration: 50, instructions: '', questions: [], isAvailable: false, settings: {} },
+      { id: 'q-24', title: 'Trigonometry Identities', assignedClass: '11 - A', timeDate: 'Feb 12, 12:00-1:00 PM', participation: '27 / 28', status: 'Completed', duration: 60, instructions: '', questions: [], isAvailable: false, settings: {} }
+    ];
+    localStorage.setItem('mockQuizzes', JSON.stringify(defaultQuizzes));
+    return defaultQuizzes;
+  });
+
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'create'
   
   // Filtering & Search states
@@ -37,147 +173,6 @@ export default function AdminQuizzesPage() {
   const [showImmediateResults, setShowImmediateResults] = useState(true);
   const [passingPercentage, setPassingPercentage] = useState('70');
 
-  // Seed default quizzes in localStorage if not present
-  useEffect(() => {
-    const localQuizzes = localStorage.getItem('mockQuizzes');
-    let parsedQuizzes = [];
-    
-    if (localQuizzes) {
-      parsedQuizzes = JSON.parse(localQuizzes);
-    } else {
-      parsedQuizzes = [
-        {
-          id: 'q-1',
-          title: 'Midterm Assessment - Algebra',
-          assignedClass: '10 - A',
-          timeDate: 'Mar 12, 10:00-11:00 AM',
-          participation: '18 / 25',
-          status: 'Live',
-          duration: '60',
-          instructions: 'Please complete all questions. Non-programmable calculators are allowed. Show all steps for full marks.',
-          isAvailable: true,
-          questions: [
-            { id: 1, text: 'Solve for x: 3x + 12 = 27', options: ['x = 3', 'x = 5', 'x = 6', 'x = 9'], correctAnswer: 'x = 5' },
-            { id: 2, text: 'Factorise completely: x^2 - 9', options: ['(x-3)(x-3)', '(x+3)(x-3)', '(x+3)(x+3)', 'x(x-9)'], correctAnswer: '(x+3)(x-3)' }
-          ],
-          settings: { shuffleQuestions: true, showImmediateResults: true }
-        },
-        {
-          id: 'q-2',
-          title: 'Linear Equations - Practice',
-          assignedClass: '9 - A',
-          timeDate: '—',
-          participation: '—',
-          status: 'Draft',
-          duration: '45',
-          instructions: 'Practice questions on drawing linear equations and finding intercepts.',
-          isAvailable: false,
-          questions: [],
-          settings: { shuffleQuestions: false, showImmediateResults: true }
-        },
-        {
-          id: 'q-3',
-          title: 'Quadratic Equations Quiz',
-          assignedClass: '10 - B',
-          timeDate: 'Mar 13, 9:30-10:00 AM',
-          participation: '—',
-          status: 'Scheduled',
-          duration: '30',
-          instructions: 'Focus on finding roots using the quadratic formula.',
-          isAvailable: true,
-          questions: [
-            { id: 1, text: 'What is the quadratic formula?', options: ['x = (-b ± √(b^2-4ac))/2a', 'x = (b ± √(b^2-4ac))/2a', 'x = -b/2a', 'x = (a ± √(b^2-4ac))/2'], correctAnswer: 'x = (-b ± √(b^2-4ac))/2a' }
-          ],
-          settings: { shuffleQuestions: false, showImmediateResults: true }
-        },
-        {
-          id: 'q-4',
-          title: 'Weekly Math Practice - Week 4',
-          assignedClass: '9 - A',
-          timeDate: 'Mar 10, 2:30-3:00 PM',
-          participation: '19 / 30',
-          status: 'Completed',
-          duration: '30',
-          instructions: 'Revision of basic fractions, decimals, and percentage conversions.',
-          isAvailable: false,
-          questions: [],
-          settings: { shuffleQuestions: false, showImmediateResults: true }
-        },
-        {
-          id: 'q-5',
-          title: 'Trigonometry Basics Test',
-          assignedClass: '11 - A',
-          timeDate: 'Mar 8, 12:00-12:45 PM',
-          participation: '24 / 28',
-          status: 'Completed',
-          duration: '45',
-          instructions: 'Use sine, cosine, and tangent rules to find missing angles and lengths.',
-          isAvailable: false,
-          questions: [],
-          settings: { shuffleQuestions: true, showImmediateResults: false }
-        },
-        {
-          id: 'q-6',
-          title: 'Probability Concepts Quiz',
-          assignedClass: '11 - B',
-          timeDate: 'Mar 14, 11:00-11:30 AM',
-          participation: '—',
-          status: 'Scheduled',
-          duration: '30',
-          instructions: 'This quiz covers simple event probability, unions, and intersections.',
-          isAvailable: true,
-          questions: [],
-          settings: { shuffleQuestions: false, showImmediateResults: true }
-        },
-        {
-          id: 'q-7',
-          title: 'Polynomials - Revision Quiz',
-          assignedClass: '10 - A',
-          timeDate: '—',
-          participation: '—',
-          status: 'Draft',
-          duration: '50',
-          instructions: 'Perform addition, subtraction, multiplication, and synthetic division on polynomials.',
-          isAvailable: false,
-          questions: [],
-          settings: { shuffleQuestions: false, showImmediateResults: true }
-        },
-        {
-          id: 'q-8',
-          title: 'Mensuration Unit Test',
-          assignedClass: '9 - B',
-          timeDate: 'Mar 6, 10:00-10:40 AM',
-          participation: '—',
-          status: 'Completed',
-          duration: '40',
-          instructions: 'Calculate cylinder, cone, and sphere surface areas and volumes.',
-          isAvailable: false,
-          questions: [],
-          settings: { shuffleQuestions: false, showImmediateResults: true }
-        },
-        // 16 additional quizzes to show rich pagination and hit exactly 24
-        { id: 'q-9', title: 'Coordinate Geometry Basics', assignedClass: '9 - A', timeDate: 'Mar 4, 11:00-11:30 AM', participation: '28 / 30', status: 'Completed', duration: '30', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-10', title: 'Statistics - Central Tendency', assignedClass: '10 - A', timeDate: 'Mar 15, 1:00-1:45 PM', participation: '—', status: 'Scheduled', duration: '45', instructions: '', questions: [], isAvailable: true, settings: {} },
-        { id: 'q-11', title: 'Calculus Introduction', assignedClass: '11 - A', timeDate: '—', participation: '—', status: 'Draft', duration: '60', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-12', title: 'Arithmetic Progression Test', assignedClass: '10 - B', timeDate: 'Mar 2, 9:00-9:45 AM', participation: '22 / 25', status: 'Completed', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-13', title: 'Set Theory Concepts', assignedClass: '9 - B', timeDate: 'Mar 18, 10:00-10:30 AM', participation: '—', status: 'Scheduled', duration: '30', instructions: '', questions: [], isAvailable: true, settings: {} },
-        { id: 'q-14', title: 'Permutations & Combinations', assignedClass: '11 - B', timeDate: '—', participation: '—', status: 'Draft', duration: '40', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-15', title: 'Matrices and Determinants', assignedClass: '11 - A', timeDate: 'Feb 28, 2:00-3:00 PM', participation: '26 / 28', status: 'Completed', duration: '60', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-16', title: 'Euclidean Geometry Proofs', assignedClass: '9 - A', timeDate: 'Feb 26, 1:00-1:50 PM', participation: '29 / 30', status: 'Completed', duration: '50', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-17', title: 'Complex Numbers Introduction', assignedClass: '11 - B', timeDate: 'Mar 20, 11:30 AM-12:30 PM', participation: '—', status: 'Scheduled', duration: '60', instructions: '', questions: [], isAvailable: true, settings: {} },
-        { id: 'q-18', title: 'Vector Algebra Basics', assignedClass: '11 - A', timeDate: '—', participation: '—', status: 'Draft', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-19', title: 'Logarithms & Indices', assignedClass: '9 - B', timeDate: 'Feb 20, 10:00-10:45 AM', participation: '23 / 24', status: 'Completed', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-20', title: 'Ratios and Proportions', assignedClass: '9 - A', timeDate: 'Feb 18, 9:00-9:30 AM', participation: '30 / 30', status: 'Completed', duration: '30', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-21', title: 'Circles and Tangents', assignedClass: '10 - B', timeDate: 'Mar 22, 10:00-10:40 AM', participation: '—', status: 'Scheduled', duration: '40', instructions: '', questions: [], isAvailable: true, settings: {} },
-        { id: 'q-22', title: 'Probability Concepts Quiz II', assignedClass: '11 - B', timeDate: '—', participation: '—', status: 'Draft', duration: '45', instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-23', title: 'Sequences and Series', assignedClass: '10 - A', timeDate: 'Feb 15, 11:00-11:50 AM', participation: '23 / 25', status: 'Completed', duration: 50, instructions: '', questions: [], isAvailable: false, settings: {} },
-        { id: 'q-24', title: 'Trigonometry Identities', assignedClass: '11 - A', timeDate: 'Feb 12, 12:00-1:00 PM', participation: '27 / 28', status: 'Completed', duration: 60, instructions: '', questions: [], isAvailable: false, settings: {} }
-      ];
-      localStorage.setItem('mockQuizzes', JSON.stringify(parsedQuizzes));
-    }
-    setQuizzes(parsedQuizzes);
-  }, []);
-
   // Filter quizzes based on query, status tab, and class filter
   const filteredQuizzes = quizzes.filter(quiz => {
     const matchesSearch = quiz.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -205,6 +200,7 @@ export default function AdminQuizzesPage() {
   // Adjust current page if it overflows due to filters
   useEffect(() => {
     if (currentPage > totalPages) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPage(totalPages);
     }
   }, [totalPages, currentPage]);
@@ -322,12 +318,9 @@ export default function AdminQuizzesPage() {
       }
     };
 
-    let updatedList = [];
-    if (editingQuizId) {
-      updatedList = quizzes.map(q => q.id === editingQuizId ? quizData : q);
-    } else {
-      updatedList = [quizData, ...quizzes];
-    }
+    const updatedList = editingQuizId
+      ? quizzes.map(q => q.id === editingQuizId ? quizData : q)
+      : [quizData, ...quizzes];
 
     localStorage.setItem('mockQuizzes', JSON.stringify(updatedList));
     setQuizzes(updatedList);
@@ -335,7 +328,7 @@ export default function AdminQuizzesPage() {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between">
+    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between animate-fade-in-up">
       <div>
         {viewMode === 'list' ? (
           /* ========================================================================= */
@@ -657,7 +650,7 @@ export default function AdminQuizzesPage() {
               
               {/* STEP 1: QUIZ DETAILS */}
               {creationStep === 1 && (
-                <div className="p-8">
+                <div className="p-8 animate-slide-in-right">
                   <div className="mb-6">
                     <h2 className="text-lg font-extrabold text-slate-900">Basic Information</h2>
                     <p className="text-xs text-slate-400 font-semibold mt-0.5">Define the core parameters for this assessment.</p>
@@ -783,7 +776,7 @@ export default function AdminQuizzesPage() {
 
               {/* STEP 2: ADD QUESTIONS */}
               {creationStep === 2 && (
-                <div className="p-8">
+                <div className="p-8 animate-slide-in-right">
                   <div className="mb-6 pb-4 border-b border-slate-100 flex items-center justify-between">
                     <div>
                       <h2 className="text-lg font-extrabold text-slate-900">Add Questions</h2>
@@ -913,7 +906,7 @@ export default function AdminQuizzesPage() {
 
               {/* STEP 3: SETTINGS */}
               {creationStep === 3 && (
-                <div className="p-8">
+                <div className="p-8 animate-slide-in-right">
                   <div className="mb-6 pb-4 border-b border-slate-100">
                     <h2 className="text-lg font-extrabold text-slate-900">Quiz Settings</h2>
                     <p className="text-xs text-slate-400 font-semibold mt-0.5">Customise behavior and rules for the quiz takers.</p>
@@ -977,7 +970,7 @@ export default function AdminQuizzesPage() {
 
               {/* STEP 4: PREVIEW & PUBLISH */}
               {creationStep === 4 && (
-                <div className="p-8">
+                <div className="p-8 animate-slide-in-right">
                   <div className="mb-6 pb-4 border-b border-slate-100">
                     <h2 className="text-lg font-extrabold text-slate-900">Preview & Publish</h2>
                     <p className="text-xs text-slate-400 font-semibold mt-0.5">Verify all configurations before launching.</p>

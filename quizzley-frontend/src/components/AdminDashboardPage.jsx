@@ -1,45 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AdminDashboardPage({ setCurrentPage, role }) {
   const [activeTab, setActiveTab] = useState('All');
-  const [quizzesData, setQuizzesData] = useState([]);
-
-  const [profileName, setProfileName] = useState('Admin User');
-  const [profileRole, setProfileRole] = useState('System Manager');
-  const [profileInitials, setProfileInitials] = useState('AU');
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userRole = role || localStorage.getItem('role');
-    
-    if (userRole === 'ADMIN') {
-      setProfileName('System Admin');
-      setProfileRole('System Manager');
-      setProfileInitials('SA');
-    } else if (userRole === 'QUIZ_MANAGER') {
-      setProfileRole('Quiz Manager');
-      if (token && token.startsWith('mock-token-')) {
-        const email = token.replace('mock-token-', '');
-        const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-        const user = mockUsers.find(u => u.email === email);
-        if (user && user.fullName) {
-          setProfileName(user.fullName);
-          const initials = user.fullName.split(' ').map(n => n[0]).join('').toUpperCase();
-          setProfileInitials(initials);
-          return;
-        }
-      }
-      setProfileName('Quiz Manager');
-      setProfileInitials('QM');
-    }
-  }, [role]);
-
-  useEffect(() => {
+  const [quizzesData] = useState(() => {
     const localQuizzes = localStorage.getItem('mockQuizzes');
     if (localQuizzes) {
       const parsed = JSON.parse(localQuizzes);
-      // Map to structure expected by dashboard
-      const mapped = parsed.map(quiz => {
+      return parsed.map(quiz => {
         let percent = 0;
         if (quiz.participation && quiz.participation !== '—') {
           const parts = quiz.participation.split('/');
@@ -58,9 +25,40 @@ export default function AdminDashboardPage({ setCurrentPage, role }) {
           status: quiz.status
         };
       });
-      setQuizzesData(mapped);
     }
-  }, []);
+    return [];
+  });
+
+  const userRole = role || localStorage.getItem('role');
+  let profileName = 'Admin User';
+  let profileRole = 'System Manager';
+  let profileInitials = 'AU';
+
+  if (userRole === 'ADMIN') {
+    profileName = 'System Admin';
+    profileRole = 'System Manager';
+    profileInitials = 'SA';
+  } else if (userRole === 'QUIZ_MANAGER') {
+    profileRole = 'Quiz Manager';
+    const token = localStorage.getItem('token');
+    if (token && token.startsWith('mock-token-')) {
+      const email = token.replace('mock-token-', '');
+      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
+      const user = mockUsers.find(u => u.email === email);
+      if (user && user.fullName) {
+        profileName = user.fullName;
+        profileInitials = user.fullName.split(' ').map(n => n[0]).join('').toUpperCase();
+      } else {
+        profileName = 'Quiz Manager';
+        profileInitials = 'QM';
+      }
+    } else {
+      profileName = 'Quiz Manager';
+      profileInitials = 'QM';
+    }
+  }
+
+
 
   // Compute stats dynamically
   const totalCount = quizzesData.length;
@@ -80,7 +78,7 @@ export default function AdminDashboardPage({ setCurrentPage, role }) {
   });
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen">
+    <div className="flex-1 bg-slate-50 min-h-screen animate-fade-in-up">
       {/* Top Navbar */}
       <header className="bg-white border-b border-slate-100 px-8 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         {/* Search */}
@@ -160,7 +158,11 @@ export default function AdminDashboardPage({ setCurrentPage, role }) {
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, idx) => (
-            <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all">
+            <div 
+              key={idx} 
+              className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md hover:-translate-y-1 transition-all duration-300 animate-fade-in-up"
+              style={{ animationDelay: `${idx * 75}ms` }}
+            >
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{stat.label}</span>
               <div className="mt-4 flex items-baseline justify-between">
                 <span className="text-3xl font-extrabold tracking-tight text-slate-900">{stat.value}</span>

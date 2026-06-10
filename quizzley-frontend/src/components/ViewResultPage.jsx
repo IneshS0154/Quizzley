@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export default function ViewResultPage({ setCurrentPage, lastResult }) {
   const [expandedId, setExpandedId] = useState(1);
@@ -62,13 +62,13 @@ export default function ViewResultPage({ setCurrentPage, lastResult }) {
   ];
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10">
+    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 animate-fade-in-up">
       
       {/* Back button and page title */}
       <div className="flex items-center space-x-3 mb-8">
         <button 
           onClick={() => setCurrentPage('results')}
-          className="p-2 bg-white border border-slate-100 hover:bg-slate-50 text-slate-600 rounded-xl transition-all cursor-pointer shadow-sm"
+          className="p-2 bg-white border border-slate-100 hover:bg-slate-50 text-slate-600 rounded-xl transition-all cursor-pointer shadow-sm active-spring"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -139,13 +139,13 @@ export default function ViewResultPage({ setCurrentPage, lastResult }) {
           <div className="space-y-3">
             <button 
               onClick={() => setCurrentPage('dashboard')}
-              className="w-full bg-[#1e3a8a] hover:bg-[#172e70] active:bg-[#112255] text-white font-semibold py-3.5 rounded-2xl shadow-md transition-all text-sm cursor-pointer"
+              className="w-full bg-[#1e3a8a] hover:bg-[#172e70] active:bg-[#112255] text-white font-semibold py-3.5 rounded-2xl shadow-md transition-all text-sm cursor-pointer active-spring"
             >
               Back to dashboard
             </button>
             <button 
               onClick={() => setCurrentPage('quizzes')}
-              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-3.5 rounded-2xl transition-all text-sm cursor-pointer"
+              className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold py-3.5 rounded-2xl transition-all text-sm cursor-pointer active-spring"
             >
               View other quizzes
             </button>
@@ -237,7 +237,7 @@ export default function ViewResultPage({ setCurrentPage, lastResult }) {
 
                   {/* Accordion Content */}
                   {isExpanded && (
-                    <div className="mt-4 pl-9 space-y-4 transition-all duration-300">
+                    <div className="mt-4 pl-9 space-y-4 transition-all duration-300 animate-fade-in">
                       <p className="text-slate-700 text-sm font-semibold leading-relaxed">{q.question}</p>
                       
                       {/* Grid: Your Answer vs Correct Answer */}

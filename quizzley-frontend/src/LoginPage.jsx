@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { auth } from "./firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
@@ -199,8 +199,8 @@ export default function LoginPage({ onLoginSuccess }) {
             </button>
           </div>
 
-          {/* Heading */}
-          <div className="mb-6">
+          {/* Heading with smooth entrance animation on switch */}
+          <div key={isSignUp ? 'signup-header' : 'signin-header'} className="mb-6 animate-fade-in-up">
             <h2 className="text-3xl font-extrabold text-slate-900 leading-tight">
               {isSignUp ? 'Create Account' : 'Welcome Back'}
             </h2>
@@ -213,7 +213,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
           {/* Error and Success Alerts */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center animate-fade-in">
               <svg className="w-4 h-4 mr-2 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
@@ -221,7 +221,7 @@ export default function LoginPage({ onLoginSuccess }) {
             </div>
           )}
           {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-xs rounded-xl flex items-center">
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-xs rounded-xl flex items-center animate-fade-in">
               <svg className="w-4 h-4 mr-2 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
@@ -230,10 +230,10 @@ export default function LoginPage({ onLoginSuccess }) {
           )}
 
           {/* Main Action Form */}
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form key={isSignUp ? 'signup' : 'signin'} onSubmit={handleFormSubmit} className="space-y-4 animate-fade-in-up">
 
             {isSignUp && (
-              <>
+              <div className="space-y-4 animate-fade-in-up">
                 {/* Full Name Field */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5 uppercase tracking-wide">Full Name</label>
@@ -273,7 +273,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     />
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {/* Email Field */}
@@ -351,7 +351,7 @@ export default function LoginPage({ onLoginSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 transition-all text-sm flex items-center justify-center"
+              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 transition-all text-sm flex items-center justify-center active-spring cursor-pointer"
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -363,18 +363,18 @@ export default function LoginPage({ onLoginSuccess }) {
           </form>
 
           {/* Social Divider */}
-          <div className="my-6 flex items-center justify-center space-x-3">
+          <div className="my-6 flex items-center justify-center space-x-3 animate-fade-in-up">
             <span className="h-px w-full bg-slate-200"></span>
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">Or Continue With</span>
             <span className="h-px w-full bg-slate-200"></span>
           </div>
 
           {/* Google Login Button */}
-          <div className="flex items-center justify-center mb-6 w-full">
+          <div className="flex items-center justify-center mb-6 w-full animate-fade-in-up">
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="w-full border border-slate-300 rounded-xl py-3 px-4 bg-white hover:bg-slate-50 transition font-medium text-slate-700 flex items-center justify-center"
+              className="w-full border border-slate-300 rounded-xl py-3 px-4 bg-white hover:bg-slate-50 transition font-medium text-slate-700 flex items-center justify-center active-spring cursor-pointer"
               aria-label="Sign in with Google"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
@@ -390,28 +390,62 @@ export default function LoginPage({ onLoginSuccess }) {
 
         {/* Footer Text */}
         <p className="text-[10px] text-slate-400 text-center leading-relaxed max-w-sm mx-auto">
-          Welcome to Quizzly. You can access a library of Past papers, Mock exams and Practice Quizzes through our platform.
+          Welcome to Quizzley. You can access a library of Past papers, Mock exams and Practice Quizzes through our platform.
         </p>
 
       </div>
 
       {/* Right Column: Hero Image */}
-      <div className="hidden lg:block lg:w-[55%] relative h-screen">
-        <img
-          src={isSignUp ? '/signup_hero.png' : '/signin_hero.png'}
-          alt="Library background"
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out scale-100"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/40 to-slate-950/10 flex flex-col justify-end p-16">
-          <div className="text-white max-w-xl transition-all duration-500 ease-in-out">
-            <h3 className="text-3xl font-bold leading-tight tracking-tight mb-3">
-              {isSignUp ? 'Empowering your academic excellence' : 'Unlock Your Potential with Quizzley'}
-            </h3>
-            <p className="text-slate-200 text-sm font-medium leading-relaxed">
-              {isSignUp
-                ? 'Join our community of lifelong learners and achieve your goals with Quizzley.'
-                : 'Access your personalized dashboard, track your quiz performance, and make informed learning decisions.'}
-            </p>
+      <div className="hidden lg:block lg:w-[55%] relative h-screen overflow-hidden">
+        {/* Layered background images for smooth opacity cross-fade */}
+        <div className="absolute inset-0 w-full h-full">
+          <img
+            src="/signin_hero.png"
+            alt="Sign In Library background"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${
+              !isSignUp ? 'opacity-100 scale-105' : 'opacity-0 scale-100 pointer-events-none'
+            }`}
+          />
+          <img
+            src="/signup_hero.png"
+            alt="Sign Up Library background"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-in-out ${
+              isSignUp ? 'opacity-100 scale-105' : 'opacity-0 scale-100 pointer-events-none'
+            }`}
+          />
+        </div>
+        
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/40 to-slate-950/10 flex flex-col justify-end p-16 z-10">
+          {/* Animated float container */}
+          <div className="text-white max-w-xl animate-float">
+            {/* Smooth height-transitioned text panels */}
+            <div className="relative min-h-[120px]">
+              <div className={`transition-all duration-700 ease-in-out ${
+                !isSignUp 
+                  ? 'opacity-100 translate-y-0 scale-100' 
+                  : 'absolute inset-0 opacity-0 translate-y-4 scale-95 pointer-events-none'
+              }`}>
+                <h3 className="text-3xl font-bold leading-tight tracking-tight mb-3">
+                  Unlock Your Potential with Quizzley
+                </h3>
+                <p className="text-slate-200 text-sm font-medium leading-relaxed">
+                  Access your personalized dashboard, track your quiz performance, and make informed learning decisions.
+                </p>
+              </div>
+              <div className={`transition-all duration-700 ease-in-out ${
+                isSignUp 
+                  ? 'opacity-100 translate-y-0 scale-100' 
+                  : 'absolute inset-0 opacity-0 translate-y-4 scale-95 pointer-events-none'
+              }`}>
+                <h3 className="text-3xl font-bold leading-tight tracking-tight mb-3">
+                  Empowering your academic excellence
+                </h3>
+                <p className="text-slate-200 text-sm font-medium leading-relaxed">
+                  Join our community of lifelong learners and achieve your goals with Quizzley.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

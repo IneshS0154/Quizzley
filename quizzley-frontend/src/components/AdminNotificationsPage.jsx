@@ -1,76 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AdminNotificationsPage() {
-  const [notifications, setNotifications] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL');
-
-  // Pre-seed some premium notifications if none are stored in localStorage
-  useEffect(() => {
+  const [notifications, setNotifications] = useState(() => {
     const stored = localStorage.getItem('adminNotifications');
     if (stored) {
-      setNotifications(JSON.parse(stored));
-    } else {
-      const defaultNotifications = [
-        {
-          id: '1',
-          title: 'System Update Completed',
-          message: 'Quizzley platform updated successfully to production version v1.0.0-PRO. All database migrations completed.',
-          category: 'SYSTEM',
-          type: 'info',
-          timestamp: '10 mins ago',
-          read: false
-        },
-        {
-          id: '2',
-          title: 'New Student Registration',
-          message: 'A new student user account has been registered under sophie.wilson@quizzley.edu.',
-          category: 'ACTIVITY',
-          type: 'success',
-          timestamp: '1 hour ago',
-          read: false
-        },
-        {
-          id: '3',
-          title: 'Admin Session Login',
-          message: 'Administrator session initiated successfully for admin@quizzley.com from IP 192.168.1.45 (macOS Chrome).',
-          category: 'SECURITY',
-          type: 'warning',
-          timestamp: '3 hours ago',
-          read: true
-        },
-        {
-          id: '4',
-          title: 'Database Backup Completed',
-          message: 'Daily automated backup of cloud databases (QuizzleyDb_Prod) executed successfully with 0 warnings.',
-          category: 'SYSTEM',
-          type: 'success',
-          timestamp: '1 day ago',
-          read: true
-        },
-        {
-          id: '5',
-          title: 'High Score Alert',
-          message: 'Student Alex Mercer scored a perfect 100% on the Advanced React Hooks midterm examination.',
-          category: 'ACTIVITY',
-          type: 'success',
-          timestamp: '2 days ago',
-          read: true
-        },
-        {
-          id: '6',
-          title: 'Password Change Request',
-          message: 'User teacher.martin@quizzley.edu requested a secure password reset link. Action completed.',
-          category: 'SECURITY',
-          type: 'info',
-          timestamp: '3 days ago',
-          read: true
-        }
-      ];
-      localStorage.setItem('adminNotifications', JSON.stringify(defaultNotifications));
-      setNotifications(defaultNotifications);
+      return JSON.parse(stored);
     }
-  }, []);
+    const defaultNotifications = [
+      {
+        id: '1',
+        title: 'System Update Completed',
+        message: 'Quizzley platform updated successfully to production version v1.0.0-PRO. All database migrations completed.',
+        category: 'SYSTEM',
+        type: 'info',
+        timestamp: '10 mins ago',
+        read: false
+      },
+      {
+        id: '2',
+        title: 'New Student Registration',
+        message: 'A new student user account has been registered under sophie.wilson@quizzley.edu.',
+        category: 'ACTIVITY',
+        type: 'success',
+        timestamp: '1 hour ago',
+        read: false
+      },
+      {
+        id: '3',
+        title: 'Admin Session Login',
+        message: 'Administrator session initiated successfully for admin@quizzley.com from IP 192.168.1.45 (macOS Chrome).',
+        category: 'SECURITY',
+        type: 'warning',
+        timestamp: '3 hours ago',
+        read: true
+      },
+      {
+        id: '4',
+        title: 'Database Backup Completed',
+        message: 'Daily automated backup of cloud databases (QuizzleyDb_Prod) executed successfully with 0 warnings.',
+        category: 'SYSTEM',
+        type: 'success',
+        timestamp: '1 day ago',
+        read: true
+      },
+      {
+        id: '5',
+        title: 'High Score Alert',
+        message: 'Student Alex Mercer scored a perfect 100% on the Advanced React Hooks midterm examination.',
+        category: 'ACTIVITY',
+        type: 'success',
+        timestamp: '2 days ago',
+        read: true
+      },
+      {
+        id: '6',
+        title: 'Password Change Request',
+        message: 'User teacher.martin@quizzley.edu requested a secure password reset link. Action completed.',
+        category: 'SECURITY',
+        type: 'info',
+        timestamp: '3 days ago',
+        read: true
+      }
+    ];
+    localStorage.setItem('adminNotifications', JSON.stringify(defaultNotifications));
+    return defaultNotifications;
+  });
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('ALL');
 
   const saveToStorage = (updatedList) => {
     setNotifications(updatedList);
@@ -151,7 +148,7 @@ export default function AdminNotificationsPage() {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between">
+    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between animate-fade-in-up">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-slate-200/50">
@@ -225,13 +222,14 @@ export default function AdminNotificationsPage() {
         {/* Notifications Timeline List */}
         <div className="space-y-4">
           {filteredNotifications.length > 0 ? (
-            filteredNotifications.map((notif) => (
+            filteredNotifications.map((notif, idx) => (
               <div 
                 key={notif.id}
                 onClick={() => toggleReadStatus(notif.id)}
-                className={`p-5 bg-white border rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-4 items-start ${
+                className={`p-5 bg-white border rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer flex gap-4 items-start animate-fade-in-up ${
                   notif.read ? 'border-slate-100 opacity-80' : 'border-blue-100 bg-blue-50/10'
                 }`}
+                style={{ animationDelay: `${idx * 50}ms` }}
               >
                 {getTypeIcon(notif.type)}
 
