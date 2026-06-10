@@ -10,6 +10,7 @@ import AdminDashboardPage from './components/AdminDashboardPage';
 import AdminAnalyticsPage from './components/AdminAnalyticsPage';
 import AdminQuizzesPage from './components/AdminQuizzesPage';
 import AdminUsersPage from './components/AdminUsersPage';
+import AdminQuizManagersPage from './components/AdminQuizManagersPage';
 import AdminNotificationsPage from './components/AdminNotificationsPage';
 import AdminSettingsPage from './components/AdminSettingsPage';
 
@@ -85,6 +86,9 @@ function App() {
         )}
         {currentPage === 'users' && (role === 'ADMIN' || role === 'QUIZ_MANAGER') && (
           <AdminUsersPage setCurrentPage={setCurrentPage} />
+        )}
+        {currentPage === 'quiz-managers' && role === 'ADMIN' && (
+          <AdminQuizManagersPage />
         )}
         {currentPage === 'analytics' && (role === 'ADMIN' || role === 'QUIZ_MANAGER') && (
           <AdminAnalyticsPage setCurrentPage={setCurrentPage} />
