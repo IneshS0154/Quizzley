@@ -1,27 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AdminSettingsPage() {
-  const [settings, setSettings] = useState({
-    systemName: 'Quizzley',
-    maintenanceMode: false,
-    publicRegistration: true,
-    defaultTimeLimit: 45,
-    allowRetakes: true,
-    passingScore: 70,
-    sessionTimeout: 30,
-    passwordComplexity: 'Medium'
+  const [settings, setSettings] = useState(() => {
+    const stored = localStorage.getItem('adminSettings');
+    return stored ? JSON.parse(stored) : {
+      systemName: 'Quizzley',
+      maintenanceMode: false,
+      publicRegistration: true,
+      defaultTimeLimit: 45,
+      allowRetakes: true,
+      passingScore: 70,
+      sessionTimeout: 30,
+      passwordComplexity: 'Medium'
+    };
   });
 
   const [activeTab, setActiveTab] = useState('general');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('adminSettings');
-    if (stored) {
-      setSettings(JSON.parse(stored));
-    }
-  }, []);
 
   const handleChange = (key, value) => {
     setSettings(prev => ({
@@ -69,7 +65,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between">
+    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between animate-fade-in-up">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-slate-200/50">
@@ -310,7 +306,7 @@ export default function AdminSettingsPage() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center gap-2"
+                  className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition-all shadow-sm flex items-center gap-2 active-spring cursor-pointer"
                 >
                   Reset Defaults
                 </button>
@@ -318,7 +314,7 @@ export default function AdminSettingsPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-bold rounded-xl transition-all shadow-md flex items-center gap-2"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-bold rounded-xl transition-all shadow-md flex items-center gap-2 active-spring cursor-pointer"
                 >
                   {isSaving ? (
                     <>

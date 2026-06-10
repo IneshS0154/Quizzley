@@ -1,23 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AdminQuizManagersPage() {
-  const [managers, setManagers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [deptFilter, setDeptFilter] = useState('ALL');
-  
-  // Modal states
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [department, setDepartment] = useState('Computer Science');
-  
-  // Validation and feedback states
-  const [modalError, setModalError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-
-  useEffect(() => {
+  const [managers, setManagers] = useState(() => {
     // Load users from localStorage and filter for QUIZ_MANAGER
     const localUsers = localStorage.getItem('mockUsers');
     let parsedUsers = [];
@@ -64,9 +48,23 @@ export default function AdminQuizManagersPage() {
     }
 
     // Display only QUIZ_MANAGERs
-    const filtered = updatedUsers.filter(u => u.role === 'QUIZ_MANAGER');
-    setManagers(filtered);
-  }, []);
+    return updatedUsers.filter(u => u.role === 'QUIZ_MANAGER');
+  });
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deptFilter, setDeptFilter] = useState('ALL');
+  
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [department, setDepartment] = useState('Computer Science');
+  
+  // Validation and feedback states
+  const [modalError, setModalError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   // Sync state when mockUsers changes
   const reloadManagers = () => {
@@ -167,7 +165,7 @@ export default function AdminQuizManagersPage() {
   });
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between relative">
+    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between relative animate-fade-in-up">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-slate-200/50">
@@ -355,8 +353,8 @@ export default function AdminQuizManagersPage() {
 
       {/* Modern Add Quiz Manager Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 animate-scale-in">
             {/* Modal Header */}
             <div className="px-6 py-5 bg-[#0B2545] text-white flex items-center justify-between">
               <div>

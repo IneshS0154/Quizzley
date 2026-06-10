@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
-  const [deptFilter, setDeptFilter] = useState('ALL');
-
-  useEffect(() => {
+  const [users] = useState(() => {
     // Seed default mock users matching Screenshot 3 if empty
     const localUsers = localStorage.getItem('mockUsers');
     let parsedUsers = [];
@@ -65,8 +60,12 @@ export default function AdminUsersPage() {
     });
 
     localStorage.setItem('mockUsers', JSON.stringify(finalUsers));
-    setUsers(finalUsers);
-  }, []);
+    return finalUsers;
+  });
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [deptFilter, setDeptFilter] = useState('ALL');
 
 
 
@@ -94,7 +93,7 @@ export default function AdminUsersPage() {
   });
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between">
+    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 flex flex-col justify-between animate-fade-in-up">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-slate-200/50">

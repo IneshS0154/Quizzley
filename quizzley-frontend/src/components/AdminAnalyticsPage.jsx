@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export default function AdminAnalyticsPage() {
   const stats = [
@@ -13,7 +13,7 @@ export default function AdminAnalyticsPage() {
   const needsAttention = [];
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10">
+    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 animate-fade-in-up">
       
       {/* Banner / Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-slate-200/50">
