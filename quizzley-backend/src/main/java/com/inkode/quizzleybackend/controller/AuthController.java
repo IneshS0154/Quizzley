@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 /**
  * REST controller for handling authentication requests (login and Google login).
  */
@@ -49,9 +51,11 @@ public class AuthController {
         );
 
         if (authentication.isAuthenticated()) {
-            String role = userService.getUserRole(request.email());
+            User user = userService.getUserByEmail(request.email()).orElse(null);
+            String role = user != null ? user.role() : userService.getUserRole(request.email());
+            String name = user != null ? user.name() : request.email();
             String token = jwtService.generateToken(request.email(), role);
-            return ResponseEntity.ok(new AuthResponse(token, role));
+            return ResponseEntity.ok(new AuthResponse(token, role, request.email(), name));
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -71,14 +75,28 @@ public class AuthController {
             User user = userService.getOrCreateGoogleUser(email, name);
 
             String token = jwtService.generateToken(user.email(), user.role());
-            return ResponseEntity.ok(new AuthResponse(token, user.role()));
+            return ResponseEntity.ok(new AuthResponse(token, user.role(), user.email(), user.name()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    /**
+     * Registers a new user account.
+     */
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        try {
+            userService.registerUser(request.email(), request.name(), request.password());
+            return ResponseEntity.ok(Map.of("message", "Account created successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
     // Request/Response DTO records
     public record LoginRequest(String email, String password) {}
     public record GoogleLoginRequest(String idToken) {}
-    public record AuthResponse(String token, String role) {}
+    public record RegisterRequest(String email, String name, String password) {}
+    public record AuthResponse(String token, String role, String email, String name) {}
 }

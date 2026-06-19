@@ -29,6 +29,8 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
     setToken(null);
     setRole('STUDENT');
     setCurrentPage('dashboard');

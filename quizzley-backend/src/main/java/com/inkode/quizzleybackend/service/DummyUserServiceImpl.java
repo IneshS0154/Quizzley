@@ -19,10 +19,9 @@ import java.util.Optional;
 public class DummyUserServiceImpl implements UserService {
 
     private final Map<String, User> mockUsers = new HashMap<>();
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     public DummyUserServiceImpl() {
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        
         mockUsers.put("admin@quizzley.com", new User(
                 "admin@quizzley.com",
                 "System Admin",
@@ -50,5 +49,15 @@ public class DummyUserServiceImpl implements UserService {
     @Override
     public Optional<User> getUserByEmail(String email) {
         return Optional.ofNullable(mockUsers.get(email));
+    }
+
+    @Override
+    public User registerUser(String email, String name, String password) {
+        if (mockUsers.containsKey(email)) {
+            throw new IllegalArgumentException("User with this email already exists.");
+        }
+        User user = new User(email, name, "STUDENT", encoder.encode(password));
+        mockUsers.put(email, user);
+        return user;
     }
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { auth } from "./firebase";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -52,50 +51,29 @@ export default function LoginPage({ onLoginSuccess }) {
         return;
       }
 
-      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      if (mockUsers.some(u => u.email === email)) {
-        setError("User with this email already exists.");
-        setLoading(false);
-        return;
-      }
-      mockUsers.push({ email, password, fullName, phoneNumber, role: 'STUDENT' });
-      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+      try {
+        const response = await fetch('http://localhost:8080/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name: fullName }),
+        });
 
-      setTimeout(() => {
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || 'Registration failed. Please try again.');
+        }
+
         setSuccess("Account created successfully! Please sign in using your credentials.");
         setIsSignUp(false);
+      } catch (err) {
+        setError(err.message || 'Registration failed. Please verify that the backend is running.');
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
       return;
     }
 
     try {
-      // Check for predefined admin credentials
-      if (email === 'admin@quizzley.com' && password === 'admin123') {
-        setSuccess(`Signed in successfully! User Role: ADMIN`);
-        localStorage.setItem('token', 'mock-token-admin');
-        localStorage.setItem('role', 'ADMIN');
-        if (onLoginSuccess) {
-          onLoginSuccess('mock-token-admin', 'ADMIN');
-        }
-        setLoading(false);
-        return;
-      }
-
-      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      const localUser = mockUsers.find(u => u.email === email && u.password === password);
-
-      if (localUser) {
-        setSuccess(`Signed in successfully! User Role: ${localUser.role}`);
-        localStorage.setItem('token', 'mock-token-' + localUser.email);
-        localStorage.setItem('role', localUser.role);
-        if (onLoginSuccess) {
-          onLoginSuccess('mock-token-' + localUser.email);
-        }
-        setLoading(false);
-        return;
-      }
-
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,8 +88,10 @@ export default function LoginPage({ onLoginSuccess }) {
       setSuccess(`Signed in successfully! User Role: ${data.role}`);
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
+      localStorage.setItem('userName', data.name || '');
+      localStorage.setItem('userEmail', data.email || '');
       if (onLoginSuccess) {
-        onLoginSuccess(data.token);
+        onLoginSuccess(data.token, data.role);
       }
     } catch (err) {
       setError(err.message || 'Login failed. Please verify that the backend is running.');
@@ -140,8 +120,10 @@ export default function LoginPage({ onLoginSuccess }) {
       setSuccess(`Google Login Successful! User Role: ${data.role}`);
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
+      localStorage.setItem('userName', data.name || '');
+      localStorage.setItem('userEmail', data.email || '');
       if (onLoginSuccess) {
-        onLoginSuccess(data.token);
+        onLoginSuccess(data.token, data.role);
       }
     } catch (err) {
       setError(err.message || 'Google Login failed on backend token verification.');
@@ -150,20 +132,7 @@ export default function LoginPage({ onLoginSuccess }) {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setError(null);
-    setSuccess(null);
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
-      await handleGoogleSuccess({ credential: idToken });
-    } catch (err) {
-      setError(err.message || 'Google Login failed.');
-      setLoading(false);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row overflow-hidden">
@@ -371,19 +340,17 @@ export default function LoginPage({ onLoginSuccess }) {
 
           {/* Google Login Button */}
           <div className="flex items-center justify-center mb-6 w-full animate-fade-in-up">
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="w-full border border-slate-300 rounded-xl py-3 px-4 bg-white hover:bg-slate-50 transition font-medium text-slate-700 flex items-center justify-center active-spring cursor-pointer"
-              aria-label="Sign in with Google"
-            >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
-                <path fill="#4285F4" d="M21.805 10.023H12v4.01h5.27c-.23 1.19-.89 2.2-1.89 2.88v2.39h3.06c1.79-1.65 2.82-4.08 2.82-6.97 0-.68-.06-1.33-.18-1.96z" />
-                <path fill="#34A853" d="M12 22c2.55 0 4.69-.84 6.25-2.29l-3.06-2.39c-.85.57-1.94.91-3.19.91-2.45 0-4.53-1.66-5.28-3.89H3.56v2.45A10 10 0 0 0 12 22z" />
-                <path fill="#FBBC05" d="M6.72 14.34A6.01 6.01 0 0 1 6.72 9.66V7.21H3.56a10 10 0 0 0 0 7.13l3.16-2.5z" />
-                <path fill="#EA4335" d="M12 6.09c1.38 0 2.62.47 3.59 1.39l2.69-2.69C16.68 3.4 14.55 2.5 12 2.5A10 10 0 0 0 3.56 7.21l3.16 2.45C7.47 7.75 9.55 6.09 12 6.09z" />
-              </svg>
-            </button>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                setError('Google Login failed. Please try again.');
+                setLoading(false);
+              }}
+              width="400"
+              theme="outline"
+              shape="rectangular"
+              logo_alignment="center"
+            />
           </div>
 
         </div>

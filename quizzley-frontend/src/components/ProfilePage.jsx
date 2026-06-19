@@ -3,18 +3,19 @@ import { useState } from 'react';
 export default function ProfilePage() {
   const role = localStorage.getItem('role') || 'STUDENT';
   const isAdmin = role === 'ADMIN';
+  const storedName = localStorage.getItem('userName') || (isAdmin ? 'System Admin' : 'Student');
+  const storedEmail = localStorage.getItem('userEmail') || (isAdmin ? 'admin@quizzley.com' : '');
+  const initials = storedName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: isAdmin ? 'System Admin' : 'Eleanor Vance',
+    name: storedName,
     studentId: isAdmin ? 'ADMIN-0001' : 'QZ-2024-8931',
     department: isAdmin ? 'Administration' : 'Computer Science & Engineering',
     major: isAdmin ? 'System Manager' : 'Software Engineering, B.S.',
-    email: isAdmin ? 'admin@quizzley.com' : 'e.vance@student.quizzley.edu',
+    email: storedEmail,
     graduation: isAdmin ? 'N/A' : 'Spring 2026',
-    avatar: isAdmin 
-      ? ''
-      : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=250'
+    avatar: ''
   });
 
   const enrollment = [
@@ -95,7 +96,7 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs border border-blue-500">
-                AU
+                {initials}
               </div>
             )}
           </div>
@@ -238,7 +239,7 @@ export default function ProfilePage() {
                       {profile.avatar ? (
                         <img src={profile.avatar} alt="Profile photo" className="w-full h-full object-cover" />
                       ) : (
-                        "AU"
+                        initials
                       )}
                     </div>
 

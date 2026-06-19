@@ -1,6 +1,11 @@
 
 
 export default function DashboardPage({ setCurrentPage }) {
+  const userName = localStorage.getItem('userName') || 'Student';
+  const userEmail = localStorage.getItem('userEmail') || '';
+  const firstName = userName.split(' ')[0];
+  const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
   // Mock data for student dashboard
   const stats = [
     { label: 'Cumulative GPA', value: '3.85', max: '/ 4.00', color: 'text-indigo-600', bg: 'bg-indigo-50/50' },
@@ -15,7 +20,7 @@ export default function DashboardPage({ setCurrentPage }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-slate-200/50">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Student Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">Welcome back, Eleanor. Here is an overview of your academic performance.</p>
+          <p className="text-sm text-slate-500 mt-1 font-medium">Welcome back, {firstName}. Here is an overview of your academic performance.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex items-center space-x-3">
           <button 
@@ -152,15 +157,10 @@ export default function DashboardPage({ setCurrentPage }) {
         <div className="space-y-8">
           {/* Quick Profile Card */}
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-100 shadow-sm mb-4">
-              {/* Profile Avatar */}
-              <img 
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150" 
-                alt="Student Profile" 
-                className="w-full h-full object-cover"
-              />
+            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-100 shadow-sm mb-4 flex items-center justify-center bg-blue-600 text-white font-extrabold text-xl">
+              {initials}
             </div>
-            <h3 className="font-bold text-slate-900 text-base">Eleanor Vance</h3>
+            <h3 className="font-bold text-slate-900 text-base">{userName}</h3>
             <span className="text-xs text-blue-600 font-bold mt-1 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">ID: QZ-2024-8931</span>
             
             <div className="w-full mt-6 pt-6 border-t border-slate-100 text-left space-y-3">

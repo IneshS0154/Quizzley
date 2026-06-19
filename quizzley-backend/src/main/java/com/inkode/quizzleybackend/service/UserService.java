@@ -34,4 +34,15 @@ public interface UserService {
      * @return an Optional containing the User if found, or empty otherwise
      */
     Optional<User> getUserByEmail(String email);
+
+    /**
+     * Registers a new user with the given details.
+     *
+     * @param email    the email for the new user
+     * @param name     the display name for the new user
+     * @param password the raw (unencoded) password
+     * @return the newly created User
+     * @throws IllegalArgumentException if a user with the given email already exists
+     */
+    User registerUser(String email, String name, String password);
 }
