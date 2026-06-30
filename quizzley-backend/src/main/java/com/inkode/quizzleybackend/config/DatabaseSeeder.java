@@ -78,6 +78,30 @@ public class DatabaseSeeder implements CommandLineRunner {
                 System.out.println("Updating quiz manager user password hash...");
                 jdbcTemplate.update("UPDATE users SET password_hash = ? WHERE email = 'manager@quizzley.com'", properHash);
             }
+
+            // 5. Seed Quizzes
+            Integer quizzesCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM quizzes", Integer.class);
+            if (quizzesCount == null || quizzesCount == 0) {
+                System.out.println("Seeding initial quizzes...");
+                Long moduleId = jdbcTemplate.queryForObject("SELECT module_id FROM modules LIMIT 1", Long.class);
+                Long teacherId = jdbcTemplate.queryForObject("SELECT user_id FROM users WHERE email = 'teacher@quizzley.com'", Long.class);
+                if (moduleId != null && teacherId != null) {
+                    jdbcTemplate.update("INSERT INTO quizzes (module_id, created_by, title, description, quiz_type, timer_minutes, focus_mode_enabled, is_active) VALUES (?, ?, ?, ?, 'PRACTICE', 60, 0, 1)",
+                            moduleId, teacherId, "Data Structures Mid-Term", "Mid-term assessment for Data Structures module.");
+                    
+                    Long quizId = jdbcTemplate.queryForObject("SELECT quiz_id FROM quizzes WHERE title = 'Data Structures Mid-Term' LIMIT 1", Long.class);
+                    if (quizId != null) {
+                        jdbcTemplate.update("INSERT INTO questions (quiz_id, question_text, question_type, marks, is_active) VALUES (?, ?, 'MCQ', 2.0, 1)",
+                                quizId, "What is the time complexity of searching in a Hash Table in average case?");
+                        Long questionId = jdbcTemplate.queryForObject("SELECT question_id FROM questions WHERE quiz_id = ? AND question_text LIKE 'What is the%' LIMIT 1", Long.class, quizId);
+                        if (questionId != null) {
+                            jdbcTemplate.update("INSERT INTO question_options (question_id, option_text, is_correct) VALUES (?, 'O(1)', 1)", questionId);
+                            jdbcTemplate.update("INSERT INTO question_options (question_id, option_text, is_correct) VALUES (?, 'O(N)', 0)", questionId);
+                            jdbcTemplate.update("INSERT INTO question_options (question_id, option_text, is_correct) VALUES (?, 'O(log N)', 0)", questionId);
+                        }
+                    }
+                }
+            }
         } catch (Exception e) {
             System.err.println("Database seeding failed: " + e.getMessage());
             e.printStackTrace();

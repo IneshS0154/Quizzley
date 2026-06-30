@@ -134,7 +134,7 @@ public class QuizService {
     }
 
     /**
-     * Updates an existing Quiz identified by id with DTO data.
+     * Updates an existing Quiz identified by id with DTO data, updating questions and options.
      */
     public Quiz updateQuiz(Long id, QuizDto dto) {
         Quiz existing = quizRepository.findById(id)
@@ -142,13 +142,31 @@ public class QuizService {
                         HttpStatus.NOT_FOUND, "Quiz not found with id: " + id));
         
         if (dto.getTitle() != null)          existing.setTitle(dto.getTitle());
-        if (dto.getDescription() != null)    existing.setDescription(dto.getDescription());
-        if (dto.getTimerMinutes() != null)   existing.setTimerMinutes(dto.getTimerMinutes());
-        if (dto.getFocusMode() != null)      existing.setFocusModeEnabled(dto.getFocusMode());
-        if (dto.getFocusModeEnabled() != null) existing.setFocusModeEnabled(dto.getFocusModeEnabled());
-        if (dto.getIsActive() != null)       existing.setIsActive(dto.getIsActive());
-        if (dto.getAvailableFrom() != null)  existing.setAvailableFrom(dto.getAvailableFrom());
-        if (dto.getAvailableUntil() != null) existing.setAvailableUntil(dto.getAvailableUntil());
+        
+        if (dto.getDescription() != null) {
+            existing.setDescription(dto.getDescription());
+        } else if (dto.getInstructions() != null) {
+            existing.setDescription(dto.getInstructions());
+        }
+
+        existing.setTimerMinutes(dto.getTimerMinutes());
+
+        if (dto.getFocusMode() != null) {
+            existing.setFocusModeEnabled(dto.getFocusMode());
+        } else if (dto.getFocusModeEnabled() != null) {
+            existing.setFocusModeEnabled(dto.getFocusModeEnabled());
+        }
+
+        if ("PUBLISHED".equalsIgnoreCase(dto.getStatus())) {
+            existing.setIsActive(true);
+        } else if ("DRAFT".equalsIgnoreCase(dto.getStatus())) {
+            existing.setIsActive(false);
+        } else if (dto.getIsActive() != null) {
+            existing.setIsActive(dto.getIsActive());
+        }
+
+        existing.setAvailableFrom(dto.getAvailableFrom());
+        existing.setAvailableUntil(dto.getAvailableUntil());
 
         if (dto.getQuizType() != null) {
             try {
@@ -158,7 +176,112 @@ public class QuizService {
             }
         }
 
-        return quizRepository.save(existing);
+        // Resolve Module by code (or fallback by ID)
+        Module module = null;
+        if (dto.getModuleCode() != null) {
+            module = moduleRepository.findByModuleCode(dto.getModuleCode()).orElse(null);
+        }
+        if (module == null && dto.getModuleId() != null) {
+            module = moduleRepository.findById(dto.getModuleId()).orElse(null);
+        }
+        if (module != null) {
+            existing.setModule(module);
+        }
+
+        // Save updated Quiz metadata first
+        Quiz savedQuiz = quizRepository.save(existing);
+
+        // Delete existing questions
+        List<Question> existingQuestions = questionRepository.findByQuizQuizId(id);
+        questionRepository.deleteAll(existingQuestions);
+
+        // Recreate new questions & options
+        if (dto.getQuestions() != null) {
+            for (QuestionDto qDto : dto.getQuestions()) {
+                Question question = new Question();
+                question.setQuiz(savedQuiz);
+                question.setQuestionText(qDto.getText());
+                
+                String qType = qDto.getType() != null ? qDto.getType() : "MCQ";
+                try {
+                    question.setQuestionType(Question.QuestionType.valueOf(qType.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    question.setQuestionType(Question.QuestionType.MCQ);
+                }
+                
+                question.setMarks(qDto.getMarks() != null ? qDto.getMarks() : 1.0);
+                question.setIsActive(true);
+
+                Question savedQuestion = questionRepository.save(question);
+
+                if (qDto.getOptions() != null) {
+                    for (QuestionOptionDto optDto : qDto.getOptions()) {
+                        QuestionOption option = new QuestionOption();
+                        option.setQuestion(savedQuestion);
+                        option.setOptionText(optDto.getText());
+                        option.setIsCorrect(optDto.getCorrect() != null ? optDto.getCorrect() : false);
+                        optionRepository.save(option);
+                    }
+                }
+            }
+        }
+
+        return savedQuiz;
+    }
+
+    /**
+     * Fetches a quiz by id, including questions and options, mapped to a QuizDto.
+     */
+    public QuizDto getQuizById(Long id) {
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Quiz not found with id: " + id));
+
+        QuizDto dto = new QuizDto();
+        dto.setQuizId(quiz.getQuizId());
+        dto.setTitle(quiz.getTitle());
+        dto.setDescription(quiz.getDescription());
+        dto.setInstructions(quiz.getDescription());
+        dto.setQuizType(quiz.getQuizType() != null ? quiz.getQuizType().name() : "PRACTICE");
+        dto.setTimerMinutes(quiz.getTimerMinutes());
+        dto.setFocusModeEnabled(quiz.getFocusModeEnabled());
+        dto.setFocusMode(quiz.getFocusModeEnabled());
+        dto.setIsActive(quiz.getIsActive());
+        dto.setAvailableFrom(quiz.getAvailableFrom());
+        dto.setAvailableUntil(quiz.getAvailableUntil());
+
+        if (quiz.getModule() != null) {
+            dto.setModuleId(quiz.getModule().getModuleId());
+            dto.setModuleCode(quiz.getModule().getModuleCode());
+        }
+        
+        dto.setStatus(quiz.getIsActive() ? "PUBLISHED" : "DRAFT");
+
+        // Map questions
+        List<Question> questions = questionRepository.findByQuizQuizId(id);
+        List<QuestionDto> questionDtos = new java.util.ArrayList<>();
+        for (Question q : questions) {
+            QuestionDto qDto = new QuestionDto();
+            qDto.setText(q.getQuestionText());
+            qDto.setType(q.getQuestionType() != null ? q.getQuestionType().name() : "MCQ");
+            qDto.setMarks(q.getMarks());
+            
+            // Map options
+            List<QuestionOptionDto> optDtos = new java.util.ArrayList<>();
+            if (q.getOptions() != null) {
+                for (QuestionOption opt : q.getOptions()) {
+                    QuestionOptionDto optDto = new QuestionOptionDto();
+                    optDto.setText(opt.getOptionText());
+                    optDto.setCorrect(opt.getIsCorrect());
+                    optDtos.add(optDto);
+                }
+            }
+            qDto.setOptions(optDtos);
+            questionDtos.add(qDto);
+        }
+        dto.setQuestions(questionDtos);
+
+        return dto;
     }
 
     /**

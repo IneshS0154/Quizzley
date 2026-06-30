@@ -68,4 +68,7 @@ public class QuizDto {
 
     public List<QuestionDto> getQuestions() { return questions; }
     public void setQuestions(List<QuestionDto> questions) { this.questions = questions; }
+
+    public String getInstructions() { return description; }
+    public void setInstructions(String instructions) { this.description = instructions; }
 }

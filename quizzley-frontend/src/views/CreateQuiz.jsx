@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Check,
@@ -517,6 +517,8 @@ function Toast({ type, message, onClose }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function CreateQuiz() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = !!id;
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -542,6 +544,62 @@ export default function CreateQuiz() {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
   };
+
+  useEffect(() => {
+    if (isEdit) {
+      const loadQuiz = async () => {
+        setLoading(true);
+        try {
+          const { data } = await api.get(`/api/admin/quizzes/${id}`);
+          
+          const formatDateTime = (dtStr) => {
+            if (!dtStr) return '';
+            return dtStr.substring(0, 16);
+          };
+
+          setBasic({
+            title: data.title || '',
+            instructions: data.instructions || data.description || '',
+            module: data.moduleCode || '',
+            batch: data.batch || 'Y1S1',
+            availableFrom: formatDateTime(data.availableFrom),
+            availableUntil: formatDateTime(data.availableUntil),
+          });
+
+          if (data.questions && data.questions.length > 0) {
+            const mappedQs = data.questions.map((q, idx) => {
+              const options = q.options ? q.options.map((o) => o.text) : ['', '', '', ''];
+              const correctIndex = q.options ? Math.max(0, q.options.findIndex((o) => o.correct)) : 0;
+              return {
+                id: q.questionId || (Date.now() + idx),
+                text: q.text,
+                type: q.type || 'MCQ',
+                marks: q.marks || 1,
+                options,
+                correctIndex,
+              };
+            });
+            setQuestions(mappedQs);
+          } else {
+            setQuestions([]);
+          }
+
+          setSettings({
+            timer: data.timerMinutes !== null && data.timerMinutes !== undefined ? String(data.timerMinutes) : '',
+            focusMode: !!data.focusModeEnabled,
+            quizType: data.quizType || 'PRACTICE',
+          });
+
+        } catch (err) {
+          console.error(err);
+          showToast('error', 'Failed to load quiz details.');
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadQuiz();
+    }
+  }, [id, isEdit]);
 
   const handleBasicChange = (field, value) => {
     setBasic((prev) => ({ ...prev, [field]: value }));
@@ -596,11 +654,16 @@ export default function CreateQuiz() {
   const handlePublish = async () => {
     setLoading(true);
     try {
-      await api.post('/api/admin/quizzes', buildPayload('PUBLISHED'));
-      showToast('success', 'Quiz published successfully!');
+      if (isEdit) {
+        await api.put(`/api/admin/quizzes/${id}`, buildPayload('PUBLISHED'));
+        showToast('success', 'Quiz updated successfully!');
+      } else {
+        await api.post('/api/admin/quizzes', buildPayload('PUBLISHED'));
+        showToast('success', 'Quiz published successfully!');
+      }
       setTimeout(() => navigate('/admin/quizzes'), 1500);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to publish quiz. Please try again.';
+      const msg = err.response?.data?.message || `Failed to ${isEdit ? 'update' : 'publish'} quiz. Please try again.`;
       showToast('error', msg);
     } finally {
       setLoading(false);
@@ -610,8 +673,13 @@ export default function CreateQuiz() {
   const handleSaveDraft = async () => {
     setLoading(true);
     try {
-      await api.post('/api/admin/quizzes', buildPayload('DRAFT'));
-      showToast('success', 'Draft saved successfully!');
+      if (isEdit) {
+        await api.put(`/api/admin/quizzes/${id}`, buildPayload('DRAFT'));
+        showToast('success', 'Quiz updated successfully!');
+      } else {
+        await api.post('/api/admin/quizzes', buildPayload('DRAFT'));
+        showToast('success', 'Draft saved successfully!');
+      }
       setTimeout(() => navigate('/admin/quizzes'), 1500);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to save draft.';
@@ -639,8 +707,8 @@ export default function CreateQuiz() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">Create New Quiz</h1>
-            <p className="text-slate-500 text-sm mt-0.5">Fill in the details step by step</p>
+            <h1 className="text-2xl font-bold text-slate-800">{isEdit ? 'Edit Quiz' : 'Create New Quiz'}</h1>
+            <p className="text-slate-500 text-sm mt-0.5">{isEdit ? 'Update the quiz details' : 'Fill in the details step by step'}</p>
           </div>
         </div>
 

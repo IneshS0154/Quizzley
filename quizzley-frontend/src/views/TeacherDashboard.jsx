@@ -75,7 +75,8 @@ export default function TeacherDashboard() {
   const dispatch = useDispatch();
   const reduxQuizzes = useSelector((state) => state.quiz.quizzes);
   const loading = useSelector((state) => state.quiz.loading);
-  const quizzes = reduxQuizzes.length > 0 ? reduxQuizzes : HARDCODED_QUIZZES;
+  const [hasFetched, setHasFetched] = useState(false);
+  const quizzes = hasFetched ? reduxQuizzes : HARDCODED_QUIZZES;
 
   useEffect(() => {
     const fetchQuizzes = async () => {
@@ -109,6 +110,7 @@ export default function TeacherDashboard() {
           };
         });
         dispatch(setQuizzes(mapped));
+        setHasFetched(true);
       } catch (err) {
         console.error('Failed to fetch quizzes:', err);
       } finally {
@@ -121,6 +123,19 @@ export default function TeacherDashboard() {
   const [activeTab, setActiveTab] = useState('All Quizzes');
   const [search, setSearch] = useState('');
   const [openMenu, setOpenMenu] = useState(null);
+
+  const handleDeleteQuiz = async (id) => {
+    if (window.confirm('Are you sure you want to delete this quiz?')) {
+      try {
+        await api.delete(`/api/admin/quizzes/${id}`);
+        const updatedQuizzes = reduxQuizzes.filter((q) => q.id !== id);
+        dispatch(setQuizzes(updatedQuizzes));
+      } catch (err) {
+        console.error('Failed to delete quiz:', err);
+        alert('Failed to delete quiz. Please try again.');
+      }
+    }
+  };
 
   const filtered = quizzes.filter((q) => {
     const matchTab =
@@ -276,15 +291,21 @@ export default function TeacherDashboard() {
                             >
                               View Details
                             </button>
-                            <button
+                             <button
                               className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
-                              onClick={() => setOpenMenu(null)}
+                              onClick={() => {
+                                setOpenMenu(null);
+                                navigate(`/admin/edit-quiz/${quiz.id}`);
+                              }}
                             >
                               Edit Quiz
                             </button>
                             <button
                               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
-                              onClick={() => setOpenMenu(null)}
+                              onClick={() => {
+                                setOpenMenu(null);
+                                handleDeleteQuiz(quiz.id);
+                              }}
                             >
                               Delete
                             </button>

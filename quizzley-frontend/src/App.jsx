@@ -47,6 +47,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/edit-quiz/:id"
+          element={
+            <ProtectedRoute>
+              <CreateQuiz />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/admin/analytics"

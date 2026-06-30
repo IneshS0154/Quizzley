@@ -37,6 +37,15 @@ public class QuizController {
     }
 
     /**
+     * GET /api/admin/quizzes/{id}
+     * Returns a single quiz by id, including questions and options.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<QuizDto> getQuizById(@PathVariable Long id) {
+        return ResponseEntity.ok(quizService.getQuizById(id));
+    }
+
+    /**
      * PUT /api/admin/quizzes/{id}
      * Updates an existing quiz by id.
      */
