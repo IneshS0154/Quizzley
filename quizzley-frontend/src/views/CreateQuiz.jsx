@@ -112,6 +112,44 @@ function Textarea({ value, onChange, placeholder, rows = 3 }) {
 
 // ─── Step 1: Basic Details ───────────────────────────────────────────────────
 function Step1({ data, onChange }) {
+  const [modules, setModules] = useState([]);
+  const [showAddModule, setShowAddModule] = useState(false);
+  const [newModuleCode, setNewModuleCode] = useState('');
+  const [newModuleName, setNewModuleName] = useState('');
+  const [addingModule, setAddingModule] = useState(false);
+  const [moduleError, setModuleError] = useState('');
+
+  useEffect(() => {
+    api.get('/api/admin/modules')
+      .then(({ data: mods }) => setModules(mods))
+      .catch(() => setModules([]));
+  }, []);
+
+  const handleAddModule = async () => {
+    if (!newModuleCode.trim() || !newModuleName.trim()) {
+      setModuleError('Both Module Code and Module Name are required.');
+      return;
+    }
+    setModuleError('');
+    setAddingModule(true);
+    try {
+      const { data: created } = await api.post('/api/admin/modules', {
+        moduleCode: newModuleCode.trim(),
+        moduleName: newModuleName.trim(),
+      });
+      setModules((prev) => [...prev, created]);
+      onChange('module', created.moduleCode);
+      setShowAddModule(false);
+      setNewModuleCode('');
+      setNewModuleName('');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to create module. Code may already exist.';
+      setModuleError(msg);
+    } finally {
+      setAddingModule(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div>
@@ -136,11 +174,70 @@ function Step1({ data, onChange }) {
           <Label required>Module</Label>
           <Select value={data.module} onChange={(e) => onChange('module', e.target.value)}>
             <option value="">Select module</option>
-            <option value="DBS101">DBS101 — Database Systems</option>
-            <option value="SE201">SE201 — Software Engineering</option>
-            <option value="CS101">CS101 — Cyber Security Fundamentals</option>
-            <option value="PF101">PF101 — Programming Fundamentals</option>
+            {modules.map((m) => (
+              <option key={m.moduleId} value={m.moduleCode}>
+                {m.moduleCode} — {m.moduleName}
+              </option>
+            ))}
           </Select>
+          {/* Add New Module toggle */}
+          {!showAddModule ? (
+            <button
+              type="button"
+              onClick={() => setShowAddModule(true)}
+              className="mt-2 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer transition"
+            >
+              <Plus size={13} /> Add New Module
+            </button>
+          ) : (
+            <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">New Module</p>
+              {moduleError && (
+                <p className="text-xs text-red-600 font-medium">{moduleError}</p>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Module Code</label>
+                  <input
+                    type="text"
+                    value={newModuleCode}
+                    onChange={(e) => setNewModuleCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. CS301"
+                    maxLength={10}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Module Name</label>
+                  <input
+                    type="text"
+                    value={newModuleName}
+                    onChange={(e) => setNewModuleName(e.target.value)}
+                    placeholder="e.g. Computer Networks"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddModule}
+                  disabled={addingModule}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-semibold rounded-lg transition cursor-pointer"
+                >
+                  {addingModule ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                  Save Module
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddModule(false); setModuleError(''); setNewModuleCode(''); setNewModuleName(''); }}
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 cursor-pointer transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div>
           <Label required>Batch</Label>
@@ -178,6 +275,7 @@ function Step1({ data, onChange }) {
     </div>
   );
 }
+
 
 // ─── Step 2: Add Questions ───────────────────────────────────────────────────
 const makeQuestion = () => ({

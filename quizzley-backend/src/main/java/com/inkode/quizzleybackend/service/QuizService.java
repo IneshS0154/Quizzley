@@ -1,23 +1,24 @@
 package com.inkode.quizzleybackend.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.inkode.quizzleybackend.dto.QuizDto;
 import com.inkode.quizzleybackend.dto.QuestionDto;
 import com.inkode.quizzleybackend.dto.QuestionOptionDto;
 import com.inkode.quizzleybackend.model.Quiz;
 import com.inkode.quizzleybackend.model.Module;
-import com.inkode.quizzleybackend.model.Question;
-import com.inkode.quizzleybackend.model.QuestionOption;
 import com.inkode.quizzleybackend.repository.QuizRepository;
 import com.inkode.quizzleybackend.repository.ModuleRepository;
-import com.inkode.quizzleybackend.repository.QuestionRepository;
-import com.inkode.quizzleybackend.repository.QuestionOptionRepository;
+import com.inkode.quizzleybackend.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
@@ -30,10 +31,36 @@ public class QuizService {
     private ModuleRepository moduleRepository;
 
     @Autowired
-    private QuestionRepository questionRepository;
+    private NotificationService notificationService;
 
     @Autowired
-    private QuestionOptionRepository optionRepository;
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private String getTableName(Module module) {
+        if (module == null || module.getModuleCode() == null) {
+            return "dbs101_questions"; // default fallback
+        }
+        return module.getModuleCode().replaceAll("[^a-zA-Z0-9_]", "").toLowerCase() + "_questions";
+    }
+
+    private void createTableIfNotExists(String tableName) {
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + tableName + " (" +
+                "question_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "quiz_id INT NOT NULL, " +
+                "question_text TEXT NOT NULL, " +
+                "question_type VARCHAR(20) NOT NULL, " +
+                "marks DECIMAL(6,2) NOT NULL DEFAULT 1.00, " +
+                "hint TEXT, " +
+                "explanation TEXT, " +
+                "is_active TINYINT(1) NOT NULL DEFAULT 1, " +
+                "options_json TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                "CONSTRAINT fk_" + tableName + "_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes (quiz_id) ON DELETE CASCADE" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    }
 
     /**
      * Returns all quizzes in the database.
@@ -49,7 +76,6 @@ public class QuizService {
     public Quiz createQuiz(QuizDto dto) {
         Quiz quiz = new Quiz();
         quiz.setTitle(dto.getTitle());
-        // description maps to instructions in the form
         quiz.setDescription(dto.getDescription() != null ? dto.getDescription() : dto.getStatus());
 
         // 1. Resolve Module by code (or fallback by ID)
@@ -61,7 +87,6 @@ public class QuizService {
             module = moduleRepository.findById(dto.getModuleId()).orElse(null);
         }
         if (module == null) {
-            // Fallback: use first module in DB or throw
             List<Module> allModules = moduleRepository.findAll();
             if (!allModules.isEmpty()) {
                 module = allModules.get(0);
@@ -85,7 +110,6 @@ public class QuizService {
         quiz.setTimerMinutes(dto.getTimerMinutes());
         quiz.setFocusModeEnabled(dto.getFocusMode() != null ? dto.getFocusMode() : (dto.getFocusModeEnabled() != null ? dto.getFocusModeEnabled() : false));
         
-        // Map status to isActive
         if ("PUBLISHED".equalsIgnoreCase(dto.getStatus()) || Boolean.TRUE.equals(dto.getIsActive())) {
             quiz.setIsActive(true);
         } else {
@@ -96,39 +120,35 @@ public class QuizService {
         quiz.setAvailableUntil(dto.getAvailableUntil());
         quiz.setCreatedBy(1L); // Default to seeded admin/teacher user
 
-        // Save Quiz
+        // Save Quiz metadata
         Quiz savedQuiz = quizRepository.save(quiz);
 
-        // 3. Save Questions & Options
+        // 3. Save Questions to dynamic table
+        String tableName = getTableName(savedQuiz.getModule());
+        createTableIfNotExists(tableName);
+
         if (dto.getQuestions() != null) {
             for (QuestionDto qDto : dto.getQuestions()) {
-                Question question = new Question();
-                question.setQuiz(savedQuiz);
-                question.setQuestionText(qDto.getText());
+                String optionsJson = "[]";
+                try {
+                    optionsJson = objectMapper.writeValueAsString(qDto.getOptions());
+                } catch (Exception e) {
+                    System.err.println("Failed to serialize options: " + e.getMessage());
+                }
                 
                 String qType = qDto.getType() != null ? qDto.getType() : "MCQ";
-                try {
-                    question.setQuestionType(Question.QuestionType.valueOf(qType.toUpperCase()));
-                } catch (IllegalArgumentException e) {
-                    question.setQuestionType(Question.QuestionType.MCQ);
-                }
-                
-                question.setMarks(qDto.getMarks() != null ? qDto.getMarks() : 1.0);
-                question.setIsActive(true);
-
-                Question savedQuestion = questionRepository.save(question);
-
-                if (qDto.getOptions() != null) {
-                    for (QuestionOptionDto optDto : qDto.getOptions()) {
-                        QuestionOption option = new QuestionOption();
-                        option.setQuestion(savedQuestion);
-                        option.setOptionText(optDto.getText());
-                        option.setIsCorrect(optDto.getCorrect() != null ? optDto.getCorrect() : false);
-                        optionRepository.save(option);
-                    }
-                }
+                jdbcTemplate.update("INSERT INTO " + tableName + " (quiz_id, question_text, question_type, marks, hint, explanation, is_active, options_json) VALUES (?, ?, ?, ?, NULL, NULL, 1, ?)",
+                        savedQuiz.getQuizId(), qDto.getText(), qType, qDto.getMarks() != null ? qDto.getMarks() : 1.0, optionsJson);
             }
         }
+
+        // Notify
+        int qCount = dto.getQuestions() != null ? dto.getQuestions().size() : 0;
+        notificationService.createNotification(
+                "Quiz Created",
+                "Quiz \"" + savedQuiz.getTitle() + "\" was created with " + qCount + " question(s).",
+                "SUCCESS"
+        );
 
         return savedQuiz;
     }
@@ -176,7 +196,7 @@ public class QuizService {
             }
         }
 
-        // Resolve Module by code (or fallback by ID)
+        // Resolve Module
         Module module = null;
         if (dto.getModuleCode() != null) {
             module = moduleRepository.findByModuleCode(dto.getModuleCode()).orElse(null);
@@ -184,45 +204,41 @@ public class QuizService {
         if (module == null && dto.getModuleId() != null) {
             module = moduleRepository.findById(dto.getModuleId()).orElse(null);
         }
+
+        String oldTableName = getTableName(existing.getModule());
+
         if (module != null) {
             existing.setModule(module);
         }
 
         // Save updated Quiz metadata first
         Quiz savedQuiz = quizRepository.save(existing);
+        String newTableName = getTableName(savedQuiz.getModule());
 
-        // Delete existing questions
-        List<Question> existingQuestions = questionRepository.findByQuizQuizId(id);
-        questionRepository.deleteAll(existingQuestions);
+        // Delete from old table
+        try {
+            jdbcTemplate.update("DELETE FROM " + oldTableName + " WHERE quiz_id = ?", id);
+        } catch (Exception e) {}
+
+        // Delete from new table just in case
+        createTableIfNotExists(newTableName);
+        try {
+            jdbcTemplate.update("DELETE FROM " + newTableName + " WHERE quiz_id = ?", id);
+        } catch (Exception e) {}
 
         // Recreate new questions & options
         if (dto.getQuestions() != null) {
             for (QuestionDto qDto : dto.getQuestions()) {
-                Question question = new Question();
-                question.setQuiz(savedQuiz);
-                question.setQuestionText(qDto.getText());
+                String optionsJson = "[]";
+                try {
+                    optionsJson = objectMapper.writeValueAsString(qDto.getOptions());
+                } catch (Exception e) {
+                    System.err.println("Failed to serialize options: " + e.getMessage());
+                }
                 
                 String qType = qDto.getType() != null ? qDto.getType() : "MCQ";
-                try {
-                    question.setQuestionType(Question.QuestionType.valueOf(qType.toUpperCase()));
-                } catch (IllegalArgumentException e) {
-                    question.setQuestionType(Question.QuestionType.MCQ);
-                }
-                
-                question.setMarks(qDto.getMarks() != null ? qDto.getMarks() : 1.0);
-                question.setIsActive(true);
-
-                Question savedQuestion = questionRepository.save(question);
-
-                if (qDto.getOptions() != null) {
-                    for (QuestionOptionDto optDto : qDto.getOptions()) {
-                        QuestionOption option = new QuestionOption();
-                        option.setQuestion(savedQuestion);
-                        option.setOptionText(optDto.getText());
-                        option.setIsCorrect(optDto.getCorrect() != null ? optDto.getCorrect() : false);
-                        optionRepository.save(option);
-                    }
-                }
+                jdbcTemplate.update("INSERT INTO " + newTableName + " (quiz_id, question_text, question_type, marks, hint, explanation, is_active, options_json) VALUES (?, ?, ?, ?, NULL, NULL, 1, ?)",
+                        savedQuiz.getQuizId(), qDto.getText(), qType, qDto.getMarks() != null ? qDto.getMarks() : 1.0, optionsJson);
             }
         }
 
@@ -257,27 +273,40 @@ public class QuizService {
         
         dto.setStatus(quiz.getIsActive() ? "PUBLISHED" : "DRAFT");
 
-        // Map questions
-        List<Question> questions = questionRepository.findByQuizQuizId(id);
+        // Map questions from dynamic module table
+        String tableName = getTableName(quiz.getModule());
+        createTableIfNotExists(tableName);
+
         List<QuestionDto> questionDtos = new java.util.ArrayList<>();
-        for (Question q : questions) {
-            QuestionDto qDto = new QuestionDto();
-            qDto.setText(q.getQuestionText());
-            qDto.setType(q.getQuestionType() != null ? q.getQuestionType().name() : "MCQ");
-            qDto.setMarks(q.getMarks());
-            
-            // Map options
-            List<QuestionOptionDto> optDtos = new java.util.ArrayList<>();
-            if (q.getOptions() != null) {
-                for (QuestionOption opt : q.getOptions()) {
-                    QuestionOptionDto optDto = new QuestionOptionDto();
-                    optDto.setText(opt.getOptionText());
-                    optDto.setCorrect(opt.getIsCorrect());
-                    optDtos.add(optDto);
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT * FROM " + tableName + " WHERE quiz_id = ?", id);
+            for (Map<String, Object> row : rows) {
+                QuestionDto qDto = new QuestionDto();
+                qDto.setText((String) row.get("question_text"));
+                qDto.setType((String) row.get("question_type"));
+                
+                Object rawMarks = row.get("marks");
+                double marks = 1.0;
+                if (rawMarks instanceof Number) {
+                    marks = ((Number) rawMarks).doubleValue();
                 }
+                qDto.setMarks(marks);
+
+                // Deserialize options json
+                String optionsJson = (String) row.get("options_json");
+                List<QuestionOptionDto> optDtos = new java.util.ArrayList<>();
+                if (optionsJson != null && !optionsJson.isBlank()) {
+                    try {
+                        optDtos = objectMapper.readValue(optionsJson, new TypeReference<List<QuestionOptionDto>>() {});
+                    } catch (Exception e) {
+                        System.err.println("Failed to parse options_json: " + e.getMessage());
+                    }
+                }
+                qDto.setOptions(optDtos);
+                questionDtos.add(qDto);
             }
-            qDto.setOptions(optDtos);
-            questionDtos.add(qDto);
+        } catch (Exception e) {
+            System.err.println("Failed to query questions from table " + tableName + ": " + e.getMessage());
         }
         dto.setQuestions(questionDtos);
 
@@ -288,9 +317,20 @@ public class QuizService {
      * Deletes a quiz by id. Throws 404 if not found.
      */
     public void deleteQuiz(Long id) {
-        if (!quizRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found with id: " + id);
-        }
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found with id: " + id));
+        String title = quiz.getTitle();
+        
+        String tableName = getTableName(quiz.getModule());
+        try {
+            jdbcTemplate.update("DELETE FROM " + tableName + " WHERE quiz_id = ?", id);
+        } catch (Exception e) {}
+
         quizRepository.deleteById(id);
+        notificationService.createNotification(
+                "Quiz Deleted",
+                "Quiz \"" + title + "\" was permanently deleted.",
+                "WARNING"
+        );
     }
 }

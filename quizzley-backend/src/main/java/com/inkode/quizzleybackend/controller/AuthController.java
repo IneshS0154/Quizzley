@@ -3,6 +3,7 @@ package com.inkode.quizzleybackend.controller;
 import com.inkode.quizzleybackend.dto.LoginRequestDto;
 import com.inkode.quizzleybackend.dto.LoginResponseDto;
 import com.inkode.quizzleybackend.dto.RegisterRequestDto;
+import com.inkode.quizzleybackend.dto.UpdateProfileDto;
 import com.inkode.quizzleybackend.model.User;
 import com.inkode.quizzleybackend.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,5 +36,17 @@ public class AuthController {
     public ResponseEntity<User> register(@RequestBody RegisterRequestDto request) {
         User savedUser = authService.register(request);
         return ResponseEntity.status(201).body(savedUser);
+    }
+
+    /**
+     * PUT /api/auth/profile/{userId}
+     * Updates profile details for user and returns updated login response.
+     */
+    @PutMapping("/profile/{userId}")
+    public ResponseEntity<LoginResponseDto> updateProfile(
+            @PathVariable Long userId,
+            @RequestBody UpdateProfileDto request) {
+        LoginResponseDto response = authService.updateProfile(userId, request);
+        return ResponseEntity.ok(response);
     }
 }

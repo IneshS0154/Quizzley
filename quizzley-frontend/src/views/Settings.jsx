@@ -1,11 +1,78 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import Sidebar from '../components/Sidebar';
-import { Save, User, Shield, Key, Database } from 'lucide-react';
+import { Save, User, Database, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { loginSuccess } from '../store/authSlice';
+import api from '../api/axios';
+
+function Toast({ type, message, onClose }) {
+  const styles = {
+    success: 'bg-green-50 border-green-200 text-green-800',
+    error: 'bg-red-50 border-red-200 text-red-800',
+  };
+  const Icon = type === 'success' ? CheckCircle2 : AlertCircle;
+  const iconClass = type === 'success' ? 'text-green-500' : 'text-red-500';
+
+  return (
+    <div className={`fixed top-5 right-5 z-50 flex items-start gap-3 border rounded-xl px-4 py-3 shadow-lg max-w-sm ${styles[type]}`}>
+      <Icon size={18} className={`shrink-0 mt-0.5 ${iconClass}`} />
+      <span className="text-sm font-medium flex-1">{message}</span>
+      <button onClick={onClose} className="text-slate-400 hover:text-slate-600 cursor-pointer ml-2">✕</button>
+    </div>
+  );
+}
 
 export default function Settings() {
+  const dispatch = useDispatch();
+  const currentUser = useSelector((state) => state.auth.user);
+
+  const [fullName, setFullName] = useState(currentUser?.fullName || currentUser?.name || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleSave = async () => {
+    if (!fullName.trim() || !email.trim()) {
+      showToast('error', 'Full name and email are required.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await api.put(`/api/auth/profile/${currentUser.userId}`, {
+        fullName,
+        email,
+      });
+      const user = {
+        role: data.role,
+        email: data.email,
+        name: data.fullName,
+        fullName: data.fullName,
+        userId: data.userId,
+      };
+      dispatch(loginSuccess({ token: data.token, user }));
+      showToast('success', 'Profile updated successfully!');
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || 'Failed to update profile. Please try again.';
+      showToast('error', msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex bg-slate-50 min-h-screen text-slate-800 font-sans">
       <Sidebar activeItem="settings" />
+
+      {toast && (
+        <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />
+      )}
+
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -28,7 +95,8 @@ export default function Settings() {
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
                   <input
                     type="text"
-                    defaultValue="System Administrator"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                   />
                 </div>
@@ -36,7 +104,8 @@ export default function Settings() {
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
                   <input
                     type="email"
-                    defaultValue="admin@quizzley.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                   />
                 </div>
@@ -75,8 +144,13 @@ export default function Settings() {
 
             {/* Save Button */}
             <div className="flex justify-end">
-              <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm cursor-pointer transition shadow-sm">
-                <Save size={16} /> Save Changes
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-semibold text-sm cursor-pointer transition shadow-sm"
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                Save Changes
               </button>
             </div>
           </div>
