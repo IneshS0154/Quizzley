@@ -1,188 +1,266 @@
 
 
-export default function DashboardPage({ setCurrentPage }) {
-  // Mock data for student dashboard
-  const stats = [
-    { label: 'Cumulative GPA', value: '3.85', max: '/ 4.00', color: 'text-indigo-600', bg: 'bg-indigo-50/50' },
-    { label: 'Quizzes Completed', value: '12', max: '', color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
-    { label: 'Average Score', value: '84%', max: '', color: 'text-amber-600', bg: 'bg-amber-50/50' },
-    { label: 'Upcoming Quizzes', value: '3', max: '', color: 'text-blue-600', bg: 'bg-blue-50/50' },
-  ];
+import { useEffect, useState } from 'react';
+import Header from './Header';
 
-  return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 animate-fade-in-up">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-6 border-b border-slate-200/50">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Student Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">Welcome back, Eleanor. Here is an overview of your academic performance.</p>
+export default function DashboardPage({ setCurrentPage, profile }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:8080/api/student/dashboard/summary', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to load dashboard data from backend');
+        }
+        const summary = await response.json();
+        setData(summary);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex-1 bg-[#F8FAFC] min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-semibold text-slate-500">Loading student dashboard...</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 bg-[#F8FAFC] min-h-screen flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-2xl border border-red-100 shadow-sm max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">Failed to Load Dashboard</h3>
+          <p className="text-sm text-slate-500 mt-2 font-medium">{error}</p>
           <button 
-            onClick={() => setCurrentPage('quizzes')}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-500/10 transition-all cursor-pointer"
+            onClick={() => window.location.reload()}
+            className="mt-6 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
           >
-            Take a Quiz
+            Retry
           </button>
         </div>
       </div>
+    );
+  }
 
-      {/* Grid: Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, idx) => (
-          <div 
-            key={idx} 
-            className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-300 animate-fade-in-up"
-            style={{ animationDelay: `${idx * 75}ms` }}
-          >
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{stat.label}</span>
-            <div className="mt-4 flex items-baseline">
-              <span className={`text-3xl font-extrabold tracking-tight ${stat.color}`}>{stat.value}</span>
-              {stat.max && <span className="text-sm font-bold text-slate-400 ml-1">{stat.max}</span>}
-            </div>
-          </div>
-        ))}
+  const { profile: dbProfile, stats, liveQuiz, upcomingQuizzes, recentlyCompleted, recentlyMissed } = data;
+
+  const todayStr = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+
+  return (
+    <div className="flex-1 bg-slate-50 min-h-screen flex flex-col animate-fade-in-up">
+      <Header profile={profile} setCurrentPage={setCurrentPage} />
+      <div className="p-8 sm:p-10 flex-1 overflow-y-auto">
+        {/* Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome back, {dbProfile.fullName}</h1>
+          <p className="text-sm text-slate-450 mt-1.5 font-medium">Here's what you need to know today.</p>
+        </div>
+        <div className="mt-2 sm:mt-0">
+          <span className="text-xs font-bold text-slate-400 tracking-wide uppercase">{todayStr}</span>
+        </div>
       </div>
 
-      {/* Detailed Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left 2 Columns: Live Quizzes and Recent Activity */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Live Quizzes Section */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                <span>Active / Live Quizzes</span>
-              </h2>
-              <button 
-                onClick={() => setCurrentPage('quizzes')}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                View all quizzes
-              </button>
-            </div>
-            
-            <div className="bg-blue-50/30 border border-blue-100/50 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-start space-x-4">
-                <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-950 text-base">Midterm Assessment - Algebra</h3>
-                  <p className="text-xs font-medium text-slate-500 mt-0.5">Mathematics • Today, 10:00 AM - 11:00 AM</p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-md uppercase">Live</span>
-                    <span className="text-[11px] font-bold text-rose-500">24 mins left</span>
-                  </div>
-                </div>
-              </div>
-              <button 
-                onClick={() => setCurrentPage('quizzes')}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/10 transition-all"
-              >
-                Take Quiz
-              </button>
-            </div>
-          </div>
-
-          {/* Recent Performance Section */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-slate-900">Recent Results</h2>
-              <button 
-                onClick={() => setCurrentPage('results')}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                See details
-              </button>
-            </div>
-            
-            <div className="divide-y divide-slate-100">
-              <div className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-800 text-sm">Linear Equations - Practice</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Mathematics • Submitted 2 days ago</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <span className="font-bold text-slate-800 text-sm">23/25</span>
-                    <p className="text-[10px] font-bold text-emerald-600">92% (Pass)</p>
-                  </div>
-                  <button 
-                    onClick={() => setCurrentPage('results')}
-                    className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-lg transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-800 text-sm">Introduction to Calculus</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Mathematics • Submitted 1 week ago</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <span className="font-bold text-slate-800 text-sm">18/25</span>
-                    <p className="text-[10px] font-bold text-emerald-600">72% (Pass)</p>
-                  </div>
-                  <button 
-                    onClick={() => setCurrentPage('results')}
-                    className="p-1.5 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-lg transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
+      {/* Stats Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* GPA / Average Score Card */}
+        <div 
+          className="bg-[#EEF2FF] border border-[#E0E7FF] p-6 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 animate-fade-in-up"
+          style={{ animationDelay: '50ms' }}
+        >
+          <span className="text-[11px] font-bold text-[#6366F1] uppercase tracking-wider">Average score</span>
+          <div className="mt-4 flex items-baseline">
+            <span className="text-4xl font-extrabold text-[#4F46E5] tracking-tight">{stats.averageScore}</span>
+            <span className="text-sm font-bold text-[#4F46E5] ml-1">%</span>
           </div>
         </div>
 
-        {/* Right Column: Mini Profile and Course List */}
-        <div className="space-y-8">
-          {/* Quick Profile Card */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-100 shadow-sm mb-4">
-              {/* Profile Avatar */}
-              <img 
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150" 
-                alt="Student Profile" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h3 className="font-bold text-slate-900 text-base">Eleanor Vance</h3>
-            <span className="text-xs text-blue-600 font-bold mt-1 bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-wider">ID: QZ-2024-8931</span>
-            
-            <div className="w-full mt-6 pt-6 border-t border-slate-100 text-left space-y-3">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Department</span>
-                <p className="text-xs font-semibold text-slate-700 mt-0.5">Computer Science & Engineering</p>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Major</span>
-                <p className="text-xs font-semibold text-slate-700 mt-0.5">Software Engineering, B.S.</p>
-              </div>
-            </div>
+        {/* Quizzes Attempted Card */}
+        <div 
+          className="bg-white border border-slate-100 p-6 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 animate-fade-in-up"
+          style={{ animationDelay: '100ms' }}
+        >
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quizzes attempted</span>
+          <div className="mt-4">
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tight">{stats.quizzesAttempted}</span>
+          </div>
+        </div>
 
+        {/* Upcoming Quizzes Card */}
+        <div 
+          className="bg-white border border-slate-100 p-6 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 animate-fade-in-up"
+          style={{ animationDelay: '150ms' }}
+        >
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Upcoming quizzes</span>
+          <div className="mt-4">
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tight">{stats.upcomingQuizzes}</span>
+          </div>
+        </div>
+
+        {/* Missed Quizzes Card */}
+        <div 
+          className="bg-white border border-slate-100 p-6 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 animate-fade-in-up"
+          style={{ animationDelay: '200ms' }}
+        >
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Missed quizzes</span>
+          <div className="mt-4">
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tight">{stats.missedQuizzes}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Live Quiz Banner Section */}
+      {liveQuiz ? (
+        <div 
+          className="bg-white border border-slate-150 border-l-4 border-l-emerald-500 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 shadow-sm animate-fade-in-up"
+          style={{ animationDelay: '250ms' }}
+        >
+          <div className="flex flex-col space-y-1">
+            <span className="text-xs font-bold text-emerald-600 tracking-wider flex items-center space-x-1">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-1"></span>
+              LIVE QUIZ
+            </span>
+            <h2 className="text-xl font-bold text-slate-900">{liveQuiz.title}</h2>
+            <p className="text-xs font-semibold text-slate-400">{liveQuiz.subject}</p>
+          </div>
+          <div className="flex items-center space-x-4 self-end md:self-auto">
+            <span className="text-xs font-bold text-amber-600 bg-amber-50/80 border border-amber-100 px-3.5 py-1.5 rounded-full">{liveQuiz.timeLeft}</span>
             <button 
-              onClick={() => setCurrentPage('profile')}
-              className="w-full mt-6 py-2.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer active-spring"
+              onClick={() => setCurrentPage('quizzes')}
+              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-600/10 active-spring cursor-pointer"
             >
-              View Full Profile
+              Take Quiz
             </button>
           </div>
         </div>
+      ) : (
+        <div className="bg-white border border-slate-150 border-l-4 border-l-slate-300 rounded-2xl p-5 flex items-center justify-between mb-8 shadow-sm">
+          <div className="flex items-center space-x-3 text-slate-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            <span className="text-xs font-bold uppercase tracking-wider">No Active Live Quizzes Right Now</span>
+          </div>
+        </div>
+      )}
 
+      {/* Two Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Left Column: Upcoming Quizzes */}
+        <div className="space-y-4">
+          <h2 className="text-base font-bold text-slate-800 tracking-tight">Upcoming Quizzes</h2>
+          <div className="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-100 shadow-sm overflow-hidden">
+            {upcomingQuizzes.length > 0 ? (
+              upcomingQuizzes.map((quiz, idx) => (
+                <div 
+                  key={quiz.quizId} 
+                  className="p-6 hover:bg-slate-50/40 transition-colors animate-fade-in-up"
+                  style={{ animationDelay: `${300 + idx * 75}ms` }}
+                >
+                  <h3 className="font-bold text-slate-900 text-sm">{quiz.title}</h3>
+                  <p className="text-xs font-semibold text-slate-450 mt-1.5">{quiz.subject} • {quiz.time}</p>
+                  <p className="text-[11px] font-bold text-slate-400 mt-2.5">{quiz.questionsCount} Questions</p>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center">
+                <p className="text-slate-400 font-semibold text-xs">No upcoming quizzes scheduled.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Completed and Missed */}
+        <div className="space-y-6">
+          
+          {/* Recently Completed */}
+          <div className="space-y-4">
+            <h2 className="text-base font-bold text-slate-800 tracking-tight">Recently Completed</h2>
+            <div className="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-100 shadow-sm overflow-hidden">
+              {recentlyCompleted.length > 0 ? (
+                recentlyCompleted.map((result, idx) => (
+                  <div 
+                    key={result.attemptId} 
+                    onClick={() => setCurrentPage('results')}
+                    className="p-5 flex items-center justify-between hover:bg-slate-50/40 transition-colors cursor-pointer animate-fade-in-up"
+                    style={{ animationDelay: `${300 + idx * 75}ms` }}
+                  >
+                    <div>
+                      <h3 className="font-bold text-slate-850 text-xs">{result.title}</h3>
+                      <p className="text-[11px] font-semibold text-slate-450 mt-1">{result.submittedAt} • {result.scoreInfo}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-slate-350" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-slate-400 font-semibold text-xs">No completed quizzes yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Recently Missed */}
+          <div className="space-y-4">
+            <h2 className="text-base font-bold text-slate-800 tracking-tight">Recently Missed</h2>
+            <div className="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-100 shadow-sm overflow-hidden">
+              {recentlyMissed.length > 0 ? (
+                recentlyMissed.map((quiz, idx) => (
+                  <div 
+                    key={quiz.quizId} 
+                    onClick={() => setCurrentPage('quizzes')}
+                    className="p-5 flex items-center justify-between hover:bg-slate-50/40 transition-colors cursor-pointer animate-fade-in-up"
+                    style={{ animationDelay: `${300 + idx * 75}ms` }}
+                  >
+                    <div>
+                      <h3 className="font-bold text-slate-850 text-xs">{quiz.title}</h3>
+                      <p className="text-[11px] font-semibold text-slate-450 mt-1">{quiz.time}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-slate-350" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-slate-400 font-semibold text-xs">Great job! No missed quizzes found.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
       </div>
     </div>
   );

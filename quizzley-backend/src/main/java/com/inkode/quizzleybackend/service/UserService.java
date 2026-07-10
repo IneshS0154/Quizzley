@@ -34,4 +34,15 @@ public interface UserService {
      * @return an Optional containing the User if found, or empty otherwise
      */
     Optional<User> getUserByEmail(String email);
+
+    /**
+     * Registers a new user with standard credentials.
+     *
+     * @param fullName the user's full name
+     * @param email    the user's email
+     * @param password the user's plain text password
+     * @return the registered User
+     */
+    User registerUser(String fullName, String email, String password);
 }
+

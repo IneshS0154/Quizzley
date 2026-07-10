@@ -52,20 +52,30 @@ export default function LoginPage({ onLoginSuccess }) {
         return;
       }
 
-      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      if (mockUsers.some(u => u.email === email)) {
-        setError("User with this email already exists.");
-        setLoading(false);
-        return;
-      }
-      mockUsers.push({ email, password, fullName, phoneNumber, role: 'STUDENT' });
-      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+      try {
+        const response = await fetch('http://localhost:8080/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName, email, password }),
+        });
 
-      setTimeout(() => {
-        setSuccess("Account created successfully! Please sign in using your credentials.");
-        setIsSignUp(false);
+        if (!response.ok) {
+          const errMsg = await response.text();
+          throw new Error(errMsg || 'Registration failed');
+        }
+
+        const data = await response.json();
+        setSuccess("Account created successfully!");
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        if (onLoginSuccess) {
+          onLoginSuccess(data.token);
+        }
+      } catch (err) {
+        setError(err.message || 'Registration failed. Please verify backend is running.');
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
       return;
     }
 
@@ -82,19 +92,6 @@ export default function LoginPage({ onLoginSuccess }) {
         return;
       }
 
-      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-      const localUser = mockUsers.find(u => u.email === email && u.password === password);
-
-      if (localUser) {
-        setSuccess(`Signed in successfully! User Role: ${localUser.role}`);
-        localStorage.setItem('token', 'mock-token-' + localUser.email);
-        localStorage.setItem('role', localUser.role);
-        if (onLoginSuccess) {
-          onLoginSuccess('mock-token-' + localUser.email);
-        }
-        setLoading(false);
-        return;
-      }
 
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',

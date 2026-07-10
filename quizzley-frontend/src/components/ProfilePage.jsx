@@ -1,28 +1,13 @@
 import { useState } from 'react';
+import Header from './Header';
 
-export default function ProfilePage() {
+export default function ProfilePage({ profile, setProfile, setCurrentPage = () => {} }) {
   const role = localStorage.getItem('role') || 'STUDENT';
   const isAdmin = role === 'ADMIN';
 
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: isAdmin ? 'System Admin' : 'Eleanor Vance',
-    studentId: isAdmin ? 'ADMIN-0001' : 'QZ-2024-8931',
-    department: isAdmin ? 'Administration' : 'Computer Science & Engineering',
-    major: isAdmin ? 'System Manager' : 'Software Engineering, B.S.',
-    email: isAdmin ? 'admin@quizzley.com' : 'e.vance@student.quizzley.edu',
-    graduation: isAdmin ? 'N/A' : 'Spring 2026',
-    avatar: isAdmin 
-      ? ''
-      : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=250'
-  });
 
-  const enrollment = [
-    { code: 'CS 301', name: 'Data Structures & Algorithms', credits: 4, grade: 'A-' },
-    { code: 'MATH 220', name: 'Linear Algebra', credits: 3, grade: 'B+' },
-    { code: 'SWE 410', name: 'Software Architecture', credits: 3, grade: 'A' },
-    { code: 'ENG 205', name: 'Technical Writing', credits: 3, grade: 'A' },
-  ];
+
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -49,59 +34,7 @@ export default function ProfilePage() {
     <div className="flex-1 bg-slate-50 min-h-screen flex flex-col animate-fade-in-up">
       
       {/* Top Search & Profile Bar */}
-      <header className="bg-white border-b border-slate-100 px-8 py-4 flex items-center justify-between shrink-0">
-        
-        {/* Search */}
-        <div className="relative w-80">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input 
-            type="text" 
-            placeholder="Search courses, library..." 
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
-          />
-        </div>
-
-        {/* Navigation & Avatar Controls */}
-        <div className="flex items-center space-x-6">
-          <nav className="hidden md:flex items-center space-x-5 text-xs font-semibold text-slate-500">
-            <a href="#courses" className="hover:text-slate-850 transition-colors">My Courses</a>
-            <a href="#library" className="hover:text-slate-850 transition-colors">Library</a>
-            <a href="#schedule" className="hover:text-slate-850 transition-colors">Schedule</a>
-          </nav>
-          
-          <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
-
-          <div className="flex items-center space-x-3.5">
-            <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all relative">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
-            </button>
-
-            <button className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-
-            {profile.avatar ? (
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200">
-                <img src={profile.avatar} alt="User avatar" className="w-full h-full object-cover" />
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-xs border border-blue-500">
-                AU
-              </div>
-            )}
-          </div>
-        </div>
-
-      </header>
+      <Header profile={profile} setCurrentPage={setCurrentPage} />
 
       {/* Main Container */}
       <div className="p-8 sm:p-10 flex-1 overflow-y-auto">
@@ -132,7 +65,15 @@ export default function ProfilePage() {
                     {/* Interactive Avatar Upload */}
                     <div className="flex flex-col items-center shrink-0">
                       <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-150 shadow-sm group">
-                        <img src={profile.avatar} alt="Avatar Preview" className="w-full h-full object-cover" />
+                        {profile.avatar ? (
+                          <img src={profile.avatar} alt="Avatar Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                          </div>
+                        )}
                         <label 
                           htmlFor="avatar-upload" 
                           className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white text-[10px] font-bold"
@@ -167,17 +108,7 @@ export default function ProfilePage() {
                           required 
                         />
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Graduation Semester</label>
-                        <input 
-                          type="text" 
-                          name="graduation" 
-                          value={profile.graduation} 
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" 
-                          required 
-                        />
-                      </div>
+
                       <div>
                         <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Department</label>
                         <input 
@@ -234,11 +165,13 @@ export default function ProfilePage() {
                 <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
                   <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 w-full">
                     {/* Profile avatar photo */}
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm shrink-0 flex items-center justify-center bg-blue-600 text-white font-extrabold text-2xl">
+                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm shrink-0 flex items-center justify-center bg-slate-100 text-slate-400">
                       {profile.avatar ? (
                         <img src={profile.avatar} alt="Profile photo" className="w-full h-full object-cover" />
                       ) : (
-                        "AU"
+                        <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
                       )}
                     </div>
 
@@ -268,10 +201,6 @@ export default function ProfilePage() {
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Institutional Email</span>
                           <span className="text-xs font-bold text-slate-800 block mt-1 leading-normal break-all">{profile.email}</span>
                         </div>
-                        <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Expected Graduation</span>
-                          <span className="text-xs font-bold text-slate-800 block mt-1 leading-normal">{profile.graduation}</span>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -289,56 +218,7 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Current Enrollment Card Table */}
-            {!isAdmin && (
-              <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-                  <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
-                    <span className="text-blue-500">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </span>
-                    <span>Current Enrollment</span>
-                  </h3>
-                  <button 
-                    onClick={() => alert("Transcript report: Request sent to Registrar Office.")}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 inline-flex items-center transition-colors cursor-pointer"
-                  >
-                    <span>View Transcript</span>
-                    <span className="ml-1">→</span>
-                  </button>
-                </div>
 
-                {/* Table Container */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-50">
-                        <th className="pb-3 pr-4 font-bold">Course Code</th>
-                        <th className="pb-3 px-4 font-bold">Course Name</th>
-                        <th className="pb-3 px-4 font-bold">Credits</th>
-                        <th className="pb-3 pl-4 font-bold text-right">Current Grade</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {enrollment.map((course, idx) => (
-                        <tr key={idx} className="text-xs text-slate-700 font-semibold">
-                          <td className="py-3.5 pr-4 text-blue-600 font-bold">{course.code}</td>
-                          <td className="py-3.5 px-4 text-slate-800">{course.name}</td>
-                          <td className="py-3.5 px-4 text-slate-500">{course.credits}</td>
-                          <td className="py-3.5 pl-4 text-right">
-                            <span className="inline-block px-2.5 py-1 bg-blue-50/70 border border-blue-100/30 text-blue-650 text-[10px] font-extrabold rounded-lg">
-                              {course.grade}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
 
           </div>
 
@@ -346,41 +226,7 @@ export default function ProfilePage() {
           <div className="lg:col-span-4 space-y-8">
             
             {/* Academic Standing Card (Gradient background) */}
-            {!isAdmin && (
-              <div className="bg-gradient-to-br from-[#3b82f6] to-[#1d4ed8] text-white p-6 rounded-3xl shadow-md relative overflow-hidden">
-                <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/5 border border-white/10"></div>
-                
-                <div className="flex justify-between items-start">
-                  <span className="text-xs font-extrabold tracking-wider uppercase text-blue-100">Academic Standing</span>
-                  <span className="text-blue-100">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  </span>
-                </div>
 
-                {/* GPA */}
-                <div className="mt-8">
-                  <div className="flex items-baseline">
-                    <span className="text-4xl font-black">3.85</span>
-                    <span className="text-sm font-semibold text-blue-150 ml-1">/ 4.00</span>
-                  </div>
-                  <span className="text-[10px] font-extrabold uppercase text-blue-200 tracking-wider block mt-1">Cumulative GPA</span>
-                </div>
-
-                {/* Stats Footer Row */}
-                <div className="mt-6 pt-6 border-t border-white/15 grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-xl font-black block">84</span>
-                    <span className="text-[9px] font-bold text-blue-150 uppercase tracking-wider block mt-0.5">Credits Earned</span>
-                  </div>
-                  <div>
-                    <span className="text-xl font-black block">16</span>
-                    <span className="text-[9px] font-bold text-blue-150 uppercase tracking-wider block mt-0.5">Current Credits</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Account Settings List */}
             <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm">
@@ -398,7 +244,7 @@ export default function ProfilePage() {
                 
                 <div className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 cursor-pointer group transition-all">
                   <div className="flex items-center space-x-3">
-                    <div className="p-2.5 bg-indigo-50 text-indigo-650 rounded-xl">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
@@ -456,7 +302,7 @@ export default function ProfilePage() {
 
                 <div className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 cursor-pointer group transition-all">
                   <div className="flex items-center space-x-3">
-                    <div className="p-2.5 bg-indigo-55/70 text-indigo-650 rounded-xl">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>

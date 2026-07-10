@@ -1,6 +1,8 @@
 import { useState } from 'react';
 
-export default function ViewResultPage({ setCurrentPage, lastResult }) {
+import Header from './Header';
+
+export default function ViewResultPage({ setCurrentPage, lastResult, profile }) {
   const [expandedId, setExpandedId] = useState(1);
 
   // Default values if no active mock attempt is loaded
@@ -62,9 +64,11 @@ export default function ViewResultPage({ setCurrentPage, lastResult }) {
   ];
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 animate-fade-in-up">
-      
-      {/* Back button and page title */}
+    <div className="flex-1 bg-slate-50 min-h-screen flex flex-col animate-fade-in-up">
+      <Header profile={profile} setCurrentPage={setCurrentPage} />
+      <div className="p-8 sm:p-10 flex-1 overflow-y-auto">
+        
+        {/* Back button and page title */}
       <div className="flex items-center space-x-3 mb-8">
         <button 
           onClick={() => setCurrentPage('results')}
@@ -288,6 +292,7 @@ export default function ViewResultPage({ setCurrentPage, lastResult }) {
 
         </div>
 
+      </div>
       </div>
     </div>
   );

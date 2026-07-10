@@ -77,8 +77,26 @@ public class AuthController {
         }
     }
 
+    /**
+     * Registers a new user with standard credentials.
+     */
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        try {
+            User user = userService.registerUser(request.fullName(), request.email(), request.password());
+            String token = jwtService.generateToken(user.email(), user.role());
+            return ResponseEntity.ok(new AuthResponse(token, user.role()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // Request/Response DTO records
     public record LoginRequest(String email, String password) {}
     public record GoogleLoginRequest(String idToken) {}
+    public record RegisterRequest(String fullName, String email, String password) {}
     public record AuthResponse(String token, String role) {}
 }
+

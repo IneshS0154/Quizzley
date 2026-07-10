@@ -1,6 +1,8 @@
 
 
-export default function ResultsPage({ setCurrentPage, lastResult }) {
+import Header from './Header';
+
+export default function ResultsPage({ setCurrentPage, lastResult, profile }) {
   const defaultResults = [
     {
       id: 'algebra-midterm',
@@ -56,8 +58,10 @@ export default function ResultsPage({ setCurrentPage, lastResult }) {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 animate-fade-in-up">
-      {/* Header */}
+    <div className="flex-1 bg-slate-50 min-h-screen flex flex-col animate-fade-in-up">
+      <Header profile={profile} setCurrentPage={setCurrentPage} />
+      <div className="p-8 sm:p-10 flex-1 overflow-y-auto">
+        {/* Header */}
       <div className="mb-8 pb-6 border-b border-slate-200/50">
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Quiz Results</h1>
         <p className="text-sm text-slate-500 mt-1 font-medium font-sans">Review your performance, detailed scores, and feedback for all completed assessments.</p>
@@ -101,6 +105,7 @@ export default function ResultsPage({ setCurrentPage, lastResult }) {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

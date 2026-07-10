@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import Header from './Header';
 
-export default function MyQuizzesPage({ setCurrentPage, setLastResult }) {
+export default function MyQuizzesPage({ setCurrentPage, setLastResult, profile }) {
   const [activeTab, setActiveTab] = useState('All Quizzes');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -179,8 +180,10 @@ export default function MyQuizzesPage({ setCurrentPage, setLastResult }) {
   });
 
   return (
-    <div className="flex-1 bg-slate-50 min-h-screen p-8 sm:p-10 relative animate-fade-in-up">
-      {/* Header Row */}
+    <div className="flex-1 bg-slate-50 min-h-screen flex flex-col relative animate-fade-in-up">
+      <Header profile={profile} setCurrentPage={setCurrentPage} />
+      <div className="p-8 sm:p-10 flex-1 overflow-y-auto relative">
+        {/* Header Row */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pb-6 border-b border-slate-200/50">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">My Quizzes</h1>
@@ -386,6 +389,7 @@ export default function MyQuizzesPage({ setCurrentPage, setLastResult }) {
         </div>
       )}
 
+      </div>
     </div>
   );
 }
