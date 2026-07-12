@@ -1,16 +1,4 @@
-<<<<<<< Updated upstream
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-
-function App() {
-  return(
-    <div>
-      <h1>Quizzley</h1>
-=======
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import LoginPage from './LoginPage';
 import Sidebar from './components/Sidebar';
 import AdminDashboardPage from './components/AdminDashboardPage';
@@ -28,7 +16,7 @@ function App() {
 
   const handleLoginSuccess = (newToken, newRole) => {
     setToken(newToken);
-    setRole(newRole || localStorage.getItem('role') || 'STUDENT');
+    setRole(newRole || localStorage.getItem('role') || 'ADMIN');
     setCurrentPage('dashboard');
   };
 
@@ -36,7 +24,7 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     setToken(null);
-    setRole('STUDENT');
+    setRole('ADMIN');
     setCurrentPage('dashboard');
   };
 
@@ -47,10 +35,10 @@ function App() {
   return (
     <div className="min-h-screen flex bg-slate-50 text-slate-800">
       {/* Sidebar Navigation */}
-      <Sidebar 
-        currentPage={currentPage} 
-        setCurrentPage={setCurrentPage} 
-        onLogout={handleLogout} 
+      <Sidebar
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        onLogout={handleLogout}
         role={role}
       />
 
@@ -81,9 +69,8 @@ function App() {
           <AdminSettingsPage />
         )}
       </main>
->>>>>>> Stashed changes
     </div>
   );
 }
 
-export default App
+export default App;
