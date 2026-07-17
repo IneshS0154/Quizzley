@@ -1,4 +1,5 @@
 import React from 'react';
+<<<<<<< Updated upstream
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Login from './views/Login';
@@ -109,3 +110,86 @@ function App() {
 }
 
 export default App;
+=======
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import Login from './views/Login';
+import Register from './views/Register';
+import TeacherDashboard from './views/TeacherDashboard';
+import StudentDashboard from './views/StudentDashboard';
+import QuizAttempt from './views/QuizAttempt';
+
+// Simple Route Guard for authenticated users
+function ProtectedRoute({ children, allowedRoles }) {
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to={user.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard'} replace />;
+  }
+
+  return children;
+}
+
+export default function App() {
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  return (
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route 
+          path="/login" 
+          element={
+            isAuthenticated ? (
+              <Navigate to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/student/dashboard'} replace />
+            ) : (
+              <Login />
+            )
+          } 
+        />
+        <Route path="/register" element={<Register />} />
+
+        {/* Admin/Teacher Routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'QUIZ_MANAGER']}>
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student Routes */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/quiz/attempt/:quizId"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <QuizAttempt />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback routing */}
+        <Route 
+          path="*" 
+          element={
+            <Navigate to="/login" replace />
+          } 
+        />
+      </Routes>
+    </Router>
+  );
+}
+>>>>>>> Stashed changes

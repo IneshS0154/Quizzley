@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+<<<<<<< Updated upstream
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { BookOpen, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
@@ -46,10 +47,49 @@ export default function Login() {
       setError(msg);
     } finally {
       setLoading(false);
+=======
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, Link } from 'react-router-dom';
+import { loginStart, loginSuccess, loginFailure } from '../store/authSlice';
+import { authApi } from '../services/api';
+import { KeyRound, Mail, Sparkles, GraduationCap } from 'lucide-react';
+
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { loading, error } = useSelector((state) => state.auth);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    dispatch(loginStart());
+    try {
+      const data = await authApi.login(email, password);
+      dispatch(loginSuccess(data));
+      if (data.user.role === 'ADMIN' || data.user.role === 'QUIZ_MANAGER') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/student/dashboard');
+      }
+    } catch (err) {
+      dispatch(loginFailure(err.message || 'Authentication failed'));
+    }
+  };
+
+  const handleQuickLogin = (role) => {
+    if (role === 'teacher') {
+      setEmail('teacher@quizzley.com');
+      setPassword('password');
+    } else {
+      setEmail('student@quizzley.com');
+      setPassword('password');
+>>>>>>> Stashed changes
     }
   };
 
   return (
+<<<<<<< Updated upstream
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100 flex items-center justify-center p-4">
       {/* Card */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-blue-100/50 border border-slate-100 overflow-hidden">
@@ -144,6 +184,111 @@ export default function Login() {
               Register
             </button>
           </p>
+=======
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background Gradients */}
+      <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-900 rounded-full filter blur-[128px] opacity-30 animate-pulse"></div>
+      <div className="absolute bottom-0 right-4 w-96 h-96 bg-teal-900 rounded-full filter blur-[128px] opacity-30 animate-pulse"></div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="flex justify-center items-center space-x-3">
+          <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30">
+            <GraduationCap className="h-8 w-8 text-white" />
+          </div>
+          <span className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-teal-400 bg-clip-text text-transparent tracking-tight">
+            Quizzley
+          </span>
+        </div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-100 tracking-tight">
+          Welcome Back
+        </h2>
+        <p className="mt-2 text-center text-sm text-slate-400">
+          Or{' '}
+          <Link to="/register" className="font-medium text-teal-400 hover:text-teal-300 transition-colors">
+            create a new account
+          </Link>
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4 sm:px-0">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 py-8 px-4 shadow-2xl rounded-3xl sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="p-4 bg-red-950/40 border border-red-800/60 rounded-2xl text-sm text-red-300">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300">Email Address</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-slate-500" />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-slate-800 rounded-2xl bg-slate-950/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                  placeholder="name@quizzley.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300">Password</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <KeyRound className="h-5 w-5 text-slate-500" />
+                </div>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-slate-800 rounded-2xl bg-slate-950/50 text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all sm:text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-2xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-500 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-[0.98]"
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </div>
+          </form>
+
+          {/* Quick Login Helpers */}
+          <div className="mt-8 pt-6 border-t border-slate-800/80">
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-transparent text-xs text-slate-500 uppercase tracking-widest flex items-center gap-1.5 font-semibold">
+                <Sparkles className="h-3.5 w-3.5 text-teal-400" /> Quick Demo Login
+              </span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('teacher')}
+                className="w-full inline-flex justify-center py-2 px-4 border border-slate-800 rounded-xl bg-slate-950/30 text-xs font-semibold text-blue-400 hover:bg-slate-950/70 transition-colors"
+              >
+                Teacher Portal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('student')}
+                className="w-full inline-flex justify-center py-2 px-4 border border-slate-800 rounded-xl bg-slate-950/30 text-xs font-semibold text-teal-400 hover:bg-slate-950/70 transition-colors"
+              >
+                Student Portal
+              </button>
+            </div>
+          </div>
+>>>>>>> Stashed changes
         </div>
       </div>
     </div>

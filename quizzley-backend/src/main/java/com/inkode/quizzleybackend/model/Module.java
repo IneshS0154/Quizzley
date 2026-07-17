@@ -1,16 +1,34 @@
 package com.inkode.quizzleybackend.model;
 
 import jakarta.persistence.*;
+<<<<<<< Updated upstream
+=======
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+>>>>>>> Stashed changes
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "modules")
+<<<<<<< Updated upstream
+=======
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+>>>>>>> Stashed changes
 public class Module {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "module_id")
+<<<<<<< Updated upstream
     private Long moduleId;
+=======
+    private Integer moduleId;
+>>>>>>> Stashed changes
 
     @Column(name = "module_name", nullable = false, length = 150)
     private String moduleName;
@@ -21,6 +39,7 @@ public class Module {
     @Column(name = "is_common_module", nullable = false)
     private Boolean isCommonModule = false;
 
+<<<<<<< Updated upstream
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -46,4 +65,9 @@ public class Module {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+=======
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+>>>>>>> Stashed changes
 }
