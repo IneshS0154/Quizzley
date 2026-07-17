@@ -4,6 +4,7 @@ import com.inkode.quizzleybackend.config.JwtUtil;
 import com.inkode.quizzleybackend.dto.LoginRequestDto;
 import com.inkode.quizzleybackend.dto.LoginResponseDto;
 import com.inkode.quizzleybackend.dto.RegisterRequestDto;
+import com.inkode.quizzleybackend.dto.UpdateProfileDto;
 import com.inkode.quizzleybackend.model.User;
 import com.inkode.quizzleybackend.repository.RoleRepository;
 import com.inkode.quizzleybackend.repository.UserRepository;
@@ -69,5 +70,35 @@ public class AuthService {
         user.setIsActive(true);
 
         return userRepository.save(user);
+    }
+
+    /**
+     * Updates an existing user's profile and returns a new login response with updated JWT.
+     */
+    public LoginResponseDto updateProfile(Long userId, UpdateProfileDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found"));
+
+        if (dto.getFullName() != null) {
+            user.setFullName(dto.getFullName());
+        }
+        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(user.getEmail())) {
+            // Check for duplicate email
+            if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "An account with this email already exists");
+            }
+            user.setEmail(dto.getEmail());
+        }
+
+        User saved = userRepository.save(user);
+        
+        String role = roleRepository.findFirstRoleByUserId(saved.getUserId())
+                .orElse("STUDENT");
+
+        String token = jwtUtil.generateToken(saved.getEmail(), role, saved.getUserId());
+
+        return new LoginResponseDto(token, saved.getEmail(), saved.getFullName(), role, saved.getUserId());
     }
 }

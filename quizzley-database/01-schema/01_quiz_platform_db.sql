@@ -8,14 +8,13 @@ USE quiz_platform_db;
 DROP TABLE IF EXISTS group_members;
 DROP TABLE IF EXISTS group_quizzes;
 DROP TABLE IF EXISTS announcements;
+DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS module_progress;
 DROP TABLE IF EXISTS memory_bank;
 DROP TABLE IF EXISTS student_answers;
 DROP TABLE IF EXISTS attempt_questions;
 DROP TABLE IF EXISTS quiz_attempts;
 DROP TABLE IF EXISTS quiz_upload_batches;
-DROP TABLE IF EXISTS question_options;
-DROP TABLE IF EXISTS questions;
 DROP TABLE IF EXISTS quiz_assignments;
 DROP TABLE IF EXISTS quizzes;
 DROP TABLE IF EXISTS module_specializations;
@@ -174,7 +173,6 @@ CREATE TABLE quizzes (
         )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- This table is used to assign quizzes to specializations and batches.
 CREATE TABLE quiz_assignments (
     assignment_id INT AUTO_INCREMENT PRIMARY KEY,
     quiz_id INT NOT NULL,
@@ -236,48 +234,7 @@ CREATE TABLE quiz_upload_batches (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ==========================================================
--- 6. QUESTION TABLES
--- ==========================================================
-
-CREATE TABLE questions (
-    question_id INT AUTO_INCREMENT PRIMARY KEY,
-    quiz_id INT NOT NULL,
-
-    question_text TEXT NOT NULL,
-    question_type ENUM('MCQ', 'TRUE_FALSE', 'SHORT_ANSWER', 'ESSAY') NOT NULL,
-
-    marks DECIMAL(6,2) NOT NULL DEFAULT 1.00,
-
-    hint TEXT,
-    explanation TEXT,
-
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_questions_quiz
-        FOREIGN KEY (quiz_id)
-        REFERENCES quizzes (quiz_id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT chk_question_marks_positive
-        CHECK (marks > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE question_options (
-    option_id INT AUTO_INCREMENT PRIMARY KEY,
-    question_id INT NOT NULL,
-
-    option_text TEXT NOT NULL,
-    is_correct BOOLEAN NOT NULL DEFAULT FALSE,
-
-    CONSTRAINT fk_question_options_question
-        FOREIGN KEY (question_id)
-        REFERENCES questions (question_id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ==========================================================
--- 7. QUIZ ATTEMPT TABLES
+-- 6. QUIZ ATTEMPT TABLES
 -- ==========================================================
 
 CREATE TABLE quiz_attempts (
@@ -327,7 +284,9 @@ CREATE TABLE quiz_attempts (
         )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- This table stores shuffled question order for each attempt.
+-- Stores question sequences per attempt. 
+-- Note: question_id references the dynamically named question tables in quiz_questions_db.
+-- No physical FOREIGN KEY constraint is applied due to cross-database separation.
 CREATE TABLE attempt_questions (
     attempt_question_id INT AUTO_INCREMENT PRIMARY KEY,
     attempt_id INT NOT NULL,
@@ -339,11 +298,6 @@ CREATE TABLE attempt_questions (
         REFERENCES quiz_attempts (attempt_id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_attempt_questions_question
-        FOREIGN KEY (question_id)
-        REFERENCES questions (question_id)
-        ON DELETE CASCADE,
-
     CONSTRAINT uq_attempt_question UNIQUE (attempt_id, question_id),
     CONSTRAINT uq_attempt_question_order UNIQUE (attempt_id, question_order),
 
@@ -351,6 +305,9 @@ CREATE TABLE attempt_questions (
         CHECK (question_order > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Stores answers given by students.
+-- Note: question_id and selected_option_id reference dynamic tables in quiz_questions_db.
+-- No physical FOREIGN KEY constraints are applied due to cross-database separation.
 CREATE TABLE student_answers (
     answer_id INT AUTO_INCREMENT PRIMARY KEY,
     attempt_id INT NOT NULL,
@@ -369,16 +326,6 @@ CREATE TABLE student_answers (
         REFERENCES quiz_attempts (attempt_id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_student_answers_question
-        FOREIGN KEY (question_id)
-        REFERENCES questions (question_id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_student_answers_selected_option
-        FOREIGN KEY (selected_option_id)
-        REFERENCES question_options (option_id)
-        ON DELETE SET NULL,
-
     CONSTRAINT uq_student_answer_per_question 
         UNIQUE (attempt_id, question_id),
 
@@ -387,7 +334,7 @@ CREATE TABLE student_answers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ==========================================================
--- 8. STUDENT DASHBOARD TABLES
+-- 7. STUDENT DASHBOARD TABLES
 -- ==========================================================
 
 CREATE TABLE memory_bank (
@@ -440,7 +387,7 @@ CREATE TABLE module_progress (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ==========================================================
--- 9. ADMIN DASHBOARD TABLES
+-- 8. ADMIN DASHBOARD TABLES
 -- ==========================================================
 
 CREATE TABLE announcements (
@@ -461,7 +408,7 @@ CREATE TABLE announcements (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ==========================================================
--- 10. OPTIONAL GROUP QUIZ TABLES
+-- 9. OPTIONAL GROUP QUIZ TABLES
 -- ==========================================================
 
 CREATE TABLE group_quizzes (
@@ -502,4 +449,13 @@ CREATE TABLE group_members (
         ON DELETE CASCADE,
 
     CONSTRAINT uq_group_member UNIQUE (group_quiz_id, student_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    message VARCHAR(1000) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

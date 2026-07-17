@@ -1,43 +1,20 @@
 package com.inkode.quizzleybackend.model;
 
 import jakarta.persistence.*;
-<<<<<<< Updated upstream
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-=======
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
-
-@Entity
-@Table(name = "users")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
->>>>>>> Stashed changes
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-<<<<<<< Updated upstream
     private Long userId;
-=======
-    private Integer userId;
->>>>>>> Stashed changes
 
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
-<<<<<<< Updated upstream
     @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
@@ -115,38 +92,4 @@ public class User {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-=======
-    @Column(nullable = false, unique = true, length = 150)
-    private String email;
-
-    @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
-    private String passwordHash;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "specialization_id")
-    private Specialization specialization;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "batch_id")
-    private Batch batch;
-
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
->>>>>>> Stashed changes
 }

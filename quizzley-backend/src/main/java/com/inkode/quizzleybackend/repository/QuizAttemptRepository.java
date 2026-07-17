@@ -2,11 +2,11 @@ package com.inkode.quizzleybackend.repository;
 
 import com.inkode.quizzleybackend.model.QuizAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.stereotype.Repository;
 
-public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Integer> {
-    List<QuizAttempt> findByStudentUserId(Integer studentId);
-    List<QuizAttempt> findByQuizQuizId(Integer quizId);
-    Optional<QuizAttempt> findFirstByQuizQuizIdAndStudentUserIdOrderByAttemptNumberDesc(Integer quizId, Integer studentId);
+import java.util.List;
+
+@Repository
+public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> {
+    List<QuizAttempt> findByQuizQuizId(Long quizId);
 }

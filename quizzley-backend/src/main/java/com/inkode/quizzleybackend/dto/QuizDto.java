@@ -1,6 +1,5 @@
 package com.inkode.quizzleybackend.dto;
 
-<<<<<<< Updated upstream
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -69,43 +68,7 @@ public class QuizDto {
 
     public List<QuestionDto> getQuestions() { return questions; }
     public void setQuestions(List<QuestionDto> questions) { this.questions = questions; }
-=======
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
-import java.util.List;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class QuizDto {
-    private Integer quizId;
-    private Integer moduleId;
-    private String moduleName;
-    private String moduleCode;
-    private Integer createdBy;
-    private String createdByName;
-    private String title;
-    private String description;
-    private String quizType; // PRACTICE, MOCK, GROUP
-    private Integer timerMinutes;
-    private Boolean focusModeEnabled;
-    private Boolean isActive;
-    private Boolean isTemporarilyDisabled;
-    private LocalDateTime availableFrom;
-    private LocalDateTime availableUntil;
-    
-    // Assignment Targets
-    private Integer specializationId;
-    private String specializationName;
-    private Integer batchId;
-    private String batchName;
-
-    // Analytics stats
-    private Integer participationCount = 0;
-    private Integer totalParticipants = 0;
-
-    private List<QuestionDto> questions;
->>>>>>> Stashed changes
+    public String getInstructions() { return description; }
+    public void setInstructions(String instructions) { this.description = instructions; }
 }

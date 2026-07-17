@@ -1,47 +1,21 @@
 package com.inkode.quizzleybackend.model;
 
 import jakarta.persistence.*;
-<<<<<<< Updated upstream
-=======
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
->>>>>>> Stashed changes
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "quizzes")
-<<<<<<< Updated upstream
 public class Quiz {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "quiz_id")
     private Long quizId;
-=======
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Quiz {
-
-    public enum QuizType {
-        PRACTICE, MOCK, GROUP
-    }
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "quiz_id")
-    private Integer quizId;
->>>>>>> Stashed changes
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "module_id", nullable = false)
     private Module module;
 
-<<<<<<< Updated upstream
     @Column(name = "created_by")
     private Long createdBy;
 
@@ -53,26 +27,11 @@ public class Quiz {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "quiz_type", length = 20)
-=======
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "created_by")
-    private User createdBy;
-
-    @Column(nullable = false, length = 200)
-    private String title;
-
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "quiz_type", nullable = false)
->>>>>>> Stashed changes
     private QuizType quizType;
 
     @Column(name = "timer_minutes")
     private Integer timerMinutes;
 
-<<<<<<< Updated upstream
     @Column(name = "focus_mode_enabled")
     private Boolean focusModeEnabled = false;
 
@@ -80,15 +39,6 @@ public class Quiz {
     private Boolean isActive = true;
 
     @Column(name = "is_temporarily_disabled")
-=======
-    @Column(name = "focus_mode_enabled", nullable = false)
-    private Boolean focusModeEnabled = false;
-
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
-
-    @Column(name = "is_temporarily_disabled", nullable = false)
->>>>>>> Stashed changes
     private Boolean isTemporarilyDisabled = false;
 
     @Column(name = "available_from")
@@ -97,7 +47,6 @@ public class Quiz {
     @Column(name = "available_until")
     private LocalDateTime availableUntil;
 
-<<<<<<< Updated upstream
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -169,13 +118,4 @@ public class Quiz {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-=======
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
->>>>>>> Stashed changes
 }

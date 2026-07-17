@@ -23,15 +23,7 @@ const stats = [
     change: '+2 this week',
     changeColor: 'text-blue-500',
   },
-  {
-    label: 'Active Students',
-    value: '48',
-    icon: Users,
-    color: 'text-violet-600',
-    bg: 'bg-violet-50',
-    change: '+5 this week',
-    changeColor: 'text-violet-500',
-  },
+
   {
     label: 'Live Now',
     value: '2',
@@ -188,13 +180,7 @@ export default function DashboardHome() {
                 <BarChart3 size={18} className="text-slate-500" />
                 View Analytics
               </button>
-              <button
-                onClick={() => navigate('/admin/students')}
-                className="w-full flex items-center gap-3 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-sm py-3 px-4 rounded-xl transition-colors duration-150 cursor-pointer border border-slate-200"
-              >
-                <Users size={18} className="text-slate-500" />
-                Manage Students
-              </button>
+
             </div>
 
             {/* Tip card */}

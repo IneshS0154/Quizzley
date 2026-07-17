@@ -16,7 +16,6 @@ import { logout } from '../store/authSlice';
 const navItems = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
   { key: 'quizzes', label: 'Quizzes', icon: FileQuestion, path: '/admin/quizzes' },
-  { key: 'students', label: 'Students', icon: Users, path: '/admin/students' },
   { key: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
   { key: 'notifications', label: 'Notifications', icon: Bell, path: '/admin/notifications' },
   { key: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },

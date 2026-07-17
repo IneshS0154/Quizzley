@@ -1,43 +1,27 @@
 package com.inkode.quizzleybackend.service;
 
-<<<<<<< Updated upstream
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.inkode.quizzleybackend.dto.QuizDto;
 import com.inkode.quizzleybackend.dto.QuestionDto;
 import com.inkode.quizzleybackend.dto.QuestionOptionDto;
 import com.inkode.quizzleybackend.model.Quiz;
 import com.inkode.quizzleybackend.model.Module;
-import com.inkode.quizzleybackend.model.Question;
-import com.inkode.quizzleybackend.model.QuestionOption;
 import com.inkode.quizzleybackend.repository.QuizRepository;
 import com.inkode.quizzleybackend.repository.ModuleRepository;
-import com.inkode.quizzleybackend.repository.QuestionRepository;
-import com.inkode.quizzleybackend.repository.QuestionOptionRepository;
+import com.inkode.quizzleybackend.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
-=======
-import com.inkode.quizzleybackend.dto.OptionDto;
-import com.inkode.quizzleybackend.dto.QuestionDto;
-import com.inkode.quizzleybackend.dto.QuizDto;
-import com.inkode.quizzleybackend.model.*;
-import com.inkode.quizzleybackend.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Service
->>>>>>> Stashed changes
 public class QuizService {
 
     @Autowired
@@ -47,11 +31,40 @@ public class QuizService {
     private ModuleRepository moduleRepository;
 
     @Autowired
-<<<<<<< Updated upstream
-    private QuestionRepository questionRepository;
+    private NotificationService notificationService;
 
     @Autowired
-    private QuestionOptionRepository optionRepository;
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private String getTableName(Module module) {
+        if (module == null || module.getModuleCode() == null) {
+            return "quiz_questions_db.dbs101_questions"; // default fallback
+        }
+        return "quiz_questions_db." + module.getModuleCode().replaceAll("[^a-zA-Z0-9_]", "").toLowerCase() + "_questions";
+    }
+
+    private void createTableIfNotExists(String tableName) {
+        String constraintName = tableName;
+        if (tableName.contains(".")) {
+            constraintName = tableName.substring(tableName.indexOf(".") + 1);
+        }
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + tableName + " (" +
+                "question_id INT AUTO_INCREMENT PRIMARY KEY, " +
+                "quiz_id INT NOT NULL, " +
+                "question_text TEXT NOT NULL, " +
+                "question_type VARCHAR(20) NOT NULL, " +
+                "marks DECIMAL(6,2) NOT NULL DEFAULT 1.00, " +
+                "hint TEXT, " +
+                "explanation TEXT, " +
+                "is_active TINYINT(1) NOT NULL DEFAULT 1, " +
+                "options_json TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                "CONSTRAINT fk_" + constraintName + "_quiz FOREIGN KEY (quiz_id) REFERENCES quiz_platform_db.quizzes (quiz_id) ON DELETE CASCADE" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    }
 
     /**
      * Returns all quizzes in the database.
@@ -67,7 +80,6 @@ public class QuizService {
     public Quiz createQuiz(QuizDto dto) {
         Quiz quiz = new Quiz();
         quiz.setTitle(dto.getTitle());
-        // description maps to instructions in the form
         quiz.setDescription(dto.getDescription() != null ? dto.getDescription() : dto.getStatus());
 
         // 1. Resolve Module by code (or fallback by ID)
@@ -79,7 +91,6 @@ public class QuizService {
             module = moduleRepository.findById(dto.getModuleId()).orElse(null);
         }
         if (module == null) {
-            // Fallback: use first module in DB or throw
             List<Module> allModules = moduleRepository.findAll();
             if (!allModules.isEmpty()) {
                 module = allModules.get(0);
@@ -103,7 +114,6 @@ public class QuizService {
         quiz.setTimerMinutes(dto.getTimerMinutes());
         quiz.setFocusModeEnabled(dto.getFocusMode() != null ? dto.getFocusMode() : (dto.getFocusModeEnabled() != null ? dto.getFocusModeEnabled() : false));
         
-        // Map status to isActive
         if ("PUBLISHED".equalsIgnoreCase(dto.getStatus()) || Boolean.TRUE.equals(dto.getIsActive())) {
             quiz.setIsActive(true);
         } else {
@@ -114,202 +124,41 @@ public class QuizService {
         quiz.setAvailableUntil(dto.getAvailableUntil());
         quiz.setCreatedBy(1L); // Default to seeded admin/teacher user
 
-        // Save Quiz
+        // Save Quiz metadata
         Quiz savedQuiz = quizRepository.save(quiz);
 
-        // 3. Save Questions & Options
+        // 3. Save Questions to dynamic table
+        String tableName = getTableName(savedQuiz.getModule());
+        createTableIfNotExists(tableName);
+
         if (dto.getQuestions() != null) {
             for (QuestionDto qDto : dto.getQuestions()) {
-                Question question = new Question();
-                question.setQuiz(savedQuiz);
-                question.setQuestionText(qDto.getText());
+                String optionsJson = "[]";
+                try {
+                    optionsJson = objectMapper.writeValueAsString(qDto.getOptions());
+                } catch (Exception e) {
+                    System.err.println("Failed to serialize options: " + e.getMessage());
+                }
                 
                 String qType = qDto.getType() != null ? qDto.getType() : "MCQ";
-                try {
-                    question.setQuestionType(Question.QuestionType.valueOf(qType.toUpperCase()));
-                } catch (IllegalArgumentException e) {
-                    question.setQuestionType(Question.QuestionType.MCQ);
-                }
-                
-                question.setMarks(qDto.getMarks() != null ? qDto.getMarks() : 1.0);
-                question.setIsActive(true);
-
-                Question savedQuestion = questionRepository.save(question);
-
-                if (qDto.getOptions() != null) {
-                    for (QuestionOptionDto optDto : qDto.getOptions()) {
-                        QuestionOption option = new QuestionOption();
-                        option.setQuestion(savedQuestion);
-                        option.setOptionText(optDto.getText());
-                        option.setIsCorrect(optDto.getCorrect() != null ? optDto.getCorrect() : false);
-                        optionRepository.save(option);
-=======
-    private UserRepository userRepository;
-
-    @Autowired
-    private QuizAssignmentRepository quizAssignmentRepository;
-
-    @Autowired
-    private QuestionRepository questionRepository;
-
-    @Autowired
-    private QuestionOptionRepository questionOptionRepository;
-
-    @Autowired
-    private QuizAttemptRepository quizAttemptRepository;
-
-    public List<QuizDto> getAllQuizzesForAdmin() {
-        List<Quiz> quizzes = quizRepository.findAll();
-        return quizzes.stream()
-                .map(this::convertToDtoAdmin)
-                .collect(Collectors.toList());
-    }
-
-    public List<QuizDto> getQuizzesForStudent(Integer studentId) {
-        User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-
-        if (student.getSpecialization() == null || student.getBatch() == null) {
-            return new ArrayList<>();
-        }
-
-        List<QuizAssignment> assignments = quizAssignmentRepository
-                .findBySpecializationSpecializationIdAndBatchBatchId(
-                        student.getSpecialization().getSpecializationId(),
-                        student.getBatch().getBatchId()
-                );
-
-        return assignments.stream()
-                .map(assignment -> convertToDtoStudent(assignment.getQuiz(), studentId))
-                .collect(Collectors.toList());
-    }
-
-    public QuizDto getQuizDetails(Integer quizId) {
-        Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
-
-        QuizDto dto = convertToDtoAdmin(quiz);
-        
-        // Fetch questions
-        List<Question> questions = questionRepository.findByQuizQuizId(quizId);
-        List<QuestionDto> questionDtos = questions.stream().map(q -> {
-            QuestionDto qDto = new QuestionDto();
-            qDto.setQuestionId(q.getQuestionId());
-            qDto.setQuizId(quizId);
-            qDto.setQuestionText(q.getQuestionText());
-            qDto.setQuestionType(q.getQuestionType().name());
-            qDto.setMarks(q.getMarks());
-            qDto.setHint(q.getHint());
-            qDto.setExplanation(q.getExplanation());
-
-            List<QuestionOption> options = questionOptionRepository.findByQuestionQuestionId(q.getQuestionId());
-            List<OptionDto> optionDtos = options.stream().map(opt -> new OptionDto(
-                    opt.getOptionId(),
-                    q.getQuestionId(),
-                    opt.getOptionText(),
-                    opt.getIsCorrect()
-            )).collect(Collectors.toList());
-
-            qDto.setOptions(optionDtos);
-            return qDto;
-        }).collect(Collectors.toList());
-
-        dto.setQuestions(questionDtos);
-        return dto;
-    }
-
-    @Transactional
-    public QuizDto saveQuiz(QuizDto dto, Integer creatorId) {
-        User creator = userRepository.findById(creatorId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Module module = moduleRepository.findById(dto.getModuleId())
-                .orElseThrow(() -> new RuntimeException("Module not found"));
-
-        Quiz quiz = new Quiz();
-        if (dto.getQuizId() != null) {
-            quiz = quizRepository.findById(dto.getQuizId())
-                    .orElseThrow(() -> new RuntimeException("Quiz not found"));
-        }
-
-        quiz.setTitle(dto.getTitle());
-        quiz.setDescription(dto.getDescription());
-        quiz.setQuizType(Quiz.QuizType.valueOf(dto.getQuizType().toUpperCase()));
-        quiz.setTimerMinutes(dto.getTimerMinutes());
-        quiz.setFocusModeEnabled(dto.getFocusModeEnabled() != null ? dto.getFocusModeEnabled() : false);
-        quiz.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
-        quiz.setIsTemporarilyDisabled(dto.getIsTemporarilyDisabled() != null ? dto.getIsTemporarilyDisabled() : false);
-        quiz.setAvailableFrom(dto.getAvailableFrom());
-        quiz.setAvailableUntil(dto.getAvailableUntil());
-        quiz.setModule(module);
-        quiz.setCreatedBy(creator);
-
-        Quiz savedQuiz = quizRepository.save(quiz);
-
-        // Save Assignment if specialization and batch are specified
-        if (dto.getSpecializationId() != null && dto.getBatchId() != null) {
-            // Delete old assignment if exists
-            List<QuizAssignment> existing = quizAssignmentRepository.findAll();
-            for (QuizAssignment ass : existing) {
-                if (ass.getQuiz().getQuizId().equals(savedQuiz.getQuizId())) {
-                    quizAssignmentRepository.delete(ass);
-                }
-            }
-
-            QuizAssignment assignment = new QuizAssignment();
-            assignment.setQuiz(savedQuiz);
-            
-            Specialization spec = new Specialization();
-            spec.setSpecializationId(dto.getSpecializationId());
-            assignment.setSpecialization(spec);
-
-            Batch batch = new Batch();
-            batch.setBatchId(dto.getBatchId());
-            assignment.setBatch(batch);
-            
-            assignment.setAssignedBy(creator);
-            quizAssignmentRepository.save(assignment);
-        }
-
-        // Save questions
-        if (dto.getQuestions() != null) {
-            // Clear existing questions for update
-            if (dto.getQuizId() != null) {
-                List<Question> existingQs = questionRepository.findByQuizQuizId(dto.getQuizId());
-                questionRepository.deleteAll(existingQs);
-            }
-
-            for (QuestionDto qDto : dto.getQuestions()) {
-                Question question = new Question();
-                question.setQuiz(savedQuiz);
-                question.setQuestionText(qDto.getQuestionText());
-                question.setQuestionType(Question.QuestionType.valueOf(qDto.getQuestionType().toUpperCase()));
-                question.setMarks(qDto.getMarks());
-                question.setHint(qDto.getHint());
-                question.setExplanation(qDto.getExplanation());
-                question.setIsActive(true);
-
-                Question savedQ = questionRepository.save(question);
-
-                if (qDto.getOptions() != null) {
-                    for (OptionDto optDto : qDto.getOptions()) {
-                        QuestionOption opt = new QuestionOption();
-                        opt.setQuestion(savedQ);
-                        opt.setOptionText(optDto.getOptionText());
-                        opt.setIsCorrect(optDto.getIsCorrect() != null ? optDto.getIsCorrect() : false);
-                        questionOptionRepository.save(opt);
->>>>>>> Stashed changes
-                    }
-                }
+                jdbcTemplate.update("INSERT INTO " + tableName + " (quiz_id, question_text, question_type, marks, hint, explanation, is_active, options_json) VALUES (?, ?, ?, ?, NULL, NULL, 1, ?)",
+                        savedQuiz.getQuizId(), qDto.getText(), qType, qDto.getMarks() != null ? qDto.getMarks() : 1.0, optionsJson);
             }
         }
 
-<<<<<<< Updated upstream
+        // Notify
+        int qCount = dto.getQuestions() != null ? dto.getQuestions().size() : 0;
+        notificationService.createNotification(
+                "Quiz Created",
+                "Quiz \"" + savedQuiz.getTitle() + "\" was created with " + qCount + " question(s).",
+                "SUCCESS"
+        );
+
         return savedQuiz;
     }
 
     /**
-     * Updates an existing Quiz identified by id with DTO data.
+     * Updates an existing Quiz identified by id with DTO data, updating questions and options.
      */
     public Quiz updateQuiz(Long id, QuizDto dto) {
         Quiz existing = quizRepository.findById(id)
@@ -317,13 +166,31 @@ public class QuizService {
                         HttpStatus.NOT_FOUND, "Quiz not found with id: " + id));
         
         if (dto.getTitle() != null)          existing.setTitle(dto.getTitle());
-        if (dto.getDescription() != null)    existing.setDescription(dto.getDescription());
-        if (dto.getTimerMinutes() != null)   existing.setTimerMinutes(dto.getTimerMinutes());
-        if (dto.getFocusMode() != null)      existing.setFocusModeEnabled(dto.getFocusMode());
-        if (dto.getFocusModeEnabled() != null) existing.setFocusModeEnabled(dto.getFocusModeEnabled());
-        if (dto.getIsActive() != null)       existing.setIsActive(dto.getIsActive());
-        if (dto.getAvailableFrom() != null)  existing.setAvailableFrom(dto.getAvailableFrom());
-        if (dto.getAvailableUntil() != null) existing.setAvailableUntil(dto.getAvailableUntil());
+        
+        if (dto.getDescription() != null) {
+            existing.setDescription(dto.getDescription());
+        } else if (dto.getInstructions() != null) {
+            existing.setDescription(dto.getInstructions());
+        }
+
+        existing.setTimerMinutes(dto.getTimerMinutes());
+
+        if (dto.getFocusMode() != null) {
+            existing.setFocusModeEnabled(dto.getFocusMode());
+        } else if (dto.getFocusModeEnabled() != null) {
+            existing.setFocusModeEnabled(dto.getFocusModeEnabled());
+        }
+
+        if ("PUBLISHED".equalsIgnoreCase(dto.getStatus())) {
+            existing.setIsActive(true);
+        } else if ("DRAFT".equalsIgnoreCase(dto.getStatus())) {
+            existing.setIsActive(false);
+        } else if (dto.getIsActive() != null) {
+            existing.setIsActive(dto.getIsActive());
+        }
+
+        existing.setAvailableFrom(dto.getAvailableFrom());
+        existing.setAvailableUntil(dto.getAvailableUntil());
 
         if (dto.getQuizType() != null) {
             try {
@@ -333,72 +200,141 @@ public class QuizService {
             }
         }
 
-        return quizRepository.save(existing);
+        // Resolve Module
+        Module module = null;
+        if (dto.getModuleCode() != null) {
+            module = moduleRepository.findByModuleCode(dto.getModuleCode()).orElse(null);
+        }
+        if (module == null && dto.getModuleId() != null) {
+            module = moduleRepository.findById(dto.getModuleId()).orElse(null);
+        }
+
+        String oldTableName = getTableName(existing.getModule());
+
+        if (module != null) {
+            existing.setModule(module);
+        }
+
+        // Save updated Quiz metadata first
+        Quiz savedQuiz = quizRepository.save(existing);
+        String newTableName = getTableName(savedQuiz.getModule());
+
+        // Delete from old table
+        try {
+            jdbcTemplate.update("DELETE FROM " + oldTableName + " WHERE quiz_id = ?", id);
+        } catch (Exception e) {}
+
+        // Delete from new table just in case
+        createTableIfNotExists(newTableName);
+        try {
+            jdbcTemplate.update("DELETE FROM " + newTableName + " WHERE quiz_id = ?", id);
+        } catch (Exception e) {}
+
+        // Recreate new questions & options
+        if (dto.getQuestions() != null) {
+            for (QuestionDto qDto : dto.getQuestions()) {
+                String optionsJson = "[]";
+                try {
+                    optionsJson = objectMapper.writeValueAsString(qDto.getOptions());
+                } catch (Exception e) {
+                    System.err.println("Failed to serialize options: " + e.getMessage());
+                }
+                
+                String qType = qDto.getType() != null ? qDto.getType() : "MCQ";
+                jdbcTemplate.update("INSERT INTO " + newTableName + " (quiz_id, question_text, question_type, marks, hint, explanation, is_active, options_json) VALUES (?, ?, ?, ?, NULL, NULL, 1, ?)",
+                        savedQuiz.getQuizId(), qDto.getText(), qType, qDto.getMarks() != null ? qDto.getMarks() : 1.0, optionsJson);
+            }
+        }
+
+        return savedQuiz;
+    }
+
+    /**
+     * Fetches a quiz by id, including questions and options, mapped to a QuizDto.
+     */
+    public QuizDto getQuizById(Long id) {
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Quiz not found with id: " + id));
+
+        QuizDto dto = new QuizDto();
+        dto.setQuizId(quiz.getQuizId());
+        dto.setTitle(quiz.getTitle());
+        dto.setDescription(quiz.getDescription());
+        dto.setInstructions(quiz.getDescription());
+        dto.setQuizType(quiz.getQuizType() != null ? quiz.getQuizType().name() : "PRACTICE");
+        dto.setTimerMinutes(quiz.getTimerMinutes());
+        dto.setFocusModeEnabled(quiz.getFocusModeEnabled());
+        dto.setFocusMode(quiz.getFocusModeEnabled());
+        dto.setIsActive(quiz.getIsActive());
+        dto.setAvailableFrom(quiz.getAvailableFrom());
+        dto.setAvailableUntil(quiz.getAvailableUntil());
+
+        if (quiz.getModule() != null) {
+            dto.setModuleId(quiz.getModule().getModuleId());
+            dto.setModuleCode(quiz.getModule().getModuleCode());
+        }
+        
+        dto.setStatus(quiz.getIsActive() ? "PUBLISHED" : "DRAFT");
+
+        // Map questions from dynamic module table
+        String tableName = getTableName(quiz.getModule());
+        createTableIfNotExists(tableName);
+
+        List<QuestionDto> questionDtos = new java.util.ArrayList<>();
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList("SELECT * FROM " + tableName + " WHERE quiz_id = ?", id);
+            for (Map<String, Object> row : rows) {
+                QuestionDto qDto = new QuestionDto();
+                qDto.setText((String) row.get("question_text"));
+                qDto.setType((String) row.get("question_type"));
+                
+                Object rawMarks = row.get("marks");
+                double marks = 1.0;
+                if (rawMarks instanceof Number) {
+                    marks = ((Number) rawMarks).doubleValue();
+                }
+                qDto.setMarks(marks);
+
+                // Deserialize options json
+                String optionsJson = (String) row.get("options_json");
+                List<QuestionOptionDto> optDtos = new java.util.ArrayList<>();
+                if (optionsJson != null && !optionsJson.isBlank()) {
+                    try {
+                        optDtos = objectMapper.readValue(optionsJson, new TypeReference<List<QuestionOptionDto>>() {});
+                    } catch (Exception e) {
+                        System.err.println("Failed to parse options_json: " + e.getMessage());
+                    }
+                }
+                qDto.setOptions(optDtos);
+                questionDtos.add(qDto);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to query questions from table " + tableName + ": " + e.getMessage());
+        }
+        dto.setQuestions(questionDtos);
+
+        return dto;
     }
 
     /**
      * Deletes a quiz by id. Throws 404 if not found.
      */
     public void deleteQuiz(Long id) {
-        if (!quizRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found with id: " + id);
-        }
-        quizRepository.deleteById(id);
-=======
-        return convertToDtoAdmin(savedQuiz);
-    }
-
-    @Transactional
-    public void deleteQuiz(Integer quizId) {
-        Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
-        quizRepository.delete(quiz);
-    }
-
-    private QuizDto convertToDtoAdmin(Quiz quiz) {
-        QuizDto dto = new QuizDto();
-        dto.setQuizId(quiz.getQuizId());
-        dto.setModuleId(quiz.getModule().getModuleId());
-        dto.setModuleName(quiz.getModule().getModuleName());
-        dto.setModuleCode(quiz.getModule().getModuleCode());
-        dto.setCreatedBy(quiz.getCreatedBy() != null ? quiz.getCreatedBy().getUserId() : null);
-        dto.setCreatedByName(quiz.getCreatedBy() != null ? quiz.getCreatedBy().getFullName() : null);
-        dto.setTitle(quiz.getTitle());
-        dto.setDescription(quiz.getDescription());
-        dto.setQuizType(quiz.getQuizType().name());
-        dto.setTimerMinutes(quiz.getTimerMinutes());
-        dto.setFocusModeEnabled(quiz.getFocusModeEnabled());
-        dto.setIsActive(quiz.getIsActive());
-        dto.setIsTemporarilyDisabled(quiz.getIsTemporarilyDisabled());
-        dto.setAvailableFrom(quiz.getAvailableFrom());
-        dto.setAvailableUntil(quiz.getAvailableUntil());
-
-        // Find Assignment
-        List<QuizAssignment> existing = quizAssignmentRepository.findAll();
-        for (QuizAssignment ass : existing) {
-            if (ass.getQuiz().getQuizId().equals(quiz.getQuizId())) {
-                dto.setSpecializationId(ass.getSpecialization().getSpecializationId());
-                dto.setSpecializationName(ass.getSpecialization().getSpecializationName());
-                dto.setBatchId(ass.getBatch().getBatchId());
-                dto.setBatchName(ass.getBatch().getBatchName());
-                break;
-            }
-        }
-
-        // Calculate attempts and participants for display stats
-        List<QuizAttempt> attempts = quizAttemptRepository.findByQuizQuizId(quiz.getQuizId());
-        dto.setParticipationCount((int) attempts.stream().map(a -> a.getStudent().getUserId()).distinct().count());
-        dto.setTotalParticipants(28); // Mock class size, or we could count users in that batch
-
-        return dto;
-    }
-
-    private QuizDto convertToDtoStudent(Quiz quiz, Integer studentId) {
-        QuizDto dto = convertToDtoAdmin(quiz);
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found with id: " + id));
+        String title = quiz.getTitle();
         
-        // Hide correct options for student unless they completed it
-        // (AttemptService will handle specific layout)
-        return dto;
->>>>>>> Stashed changes
+        String tableName = getTableName(quiz.getModule());
+        try {
+            jdbcTemplate.update("DELETE FROM " + tableName + " WHERE quiz_id = ?", id);
+        } catch (Exception e) {}
+
+        quizRepository.deleteById(id);
+        notificationService.createNotification(
+                "Quiz Deleted",
+                "Quiz \"" + title + "\" was permanently deleted.",
+                "WARNING"
+        );
     }
 }

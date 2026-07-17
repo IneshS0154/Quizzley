@@ -1,31 +1,15 @@
 package com.inkode.quizzleybackend.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "quiz_attempts", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"quiz_id", "student_id", "attempt_number"})
-})
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "quiz_attempts")
 public class QuizAttempt {
-
-    public enum AttemptStatus {
-        IN_PROGRESS, SUBMITTED, AUTO_SUBMITTED, CANCELLED
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "attempt_id")
-    private Integer attemptId;
+    private Long attemptId;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "quiz_id", nullable = false)
@@ -38,26 +22,35 @@ public class QuizAttempt {
     @Column(name = "attempt_number", nullable = false)
     private Integer attemptNumber;
 
-    @Column(name = "started_at", nullable = false, updatable = false)
-    @CreationTimestamp
-    private LocalDateTime startedAt;
+    @Column(name = "total_marks", nullable = false)
+    private Double totalMarks;
 
-    @Column(name = "submitted_at")
-    private LocalDateTime submittedAt;
+    @Column(name = "obtained_marks", nullable = false)
+    private Double obtainedMarks;
 
-    @Column(name = "time_taken_seconds")
-    private Integer timeTakenSeconds;
+    @Column(name = "status", nullable = false)
+    private String status;
 
-    @Column(name = "total_marks", nullable = false, precision = 8, scale = 2)
-    private BigDecimal totalMarks = BigDecimal.ZERO;
+    public QuizAttempt() {}
 
-    @Column(name = "obtained_marks", nullable = false, precision = 8, scale = 2)
-    private BigDecimal obtainedMarks = BigDecimal.ZERO;
+    public Long getAttemptId() { return attemptId; }
+    public void setAttemptId(Long attemptId) { this.attemptId = attemptId; }
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AttemptStatus status = AttemptStatus.IN_PROGRESS;
+    public Quiz getQuiz() { return quiz; }
+    public void setQuiz(Quiz quiz) { this.quiz = quiz; }
 
-    @Column(name = "auto_submitted", nullable = false)
-    private Boolean autoSubmitted = false;
+    public User getStudent() { return student; }
+    public void setStudent(User student) { this.student = student; }
+
+    public Integer getAttemptNumber() { return attemptNumber; }
+    public void setAttemptNumber(Integer attemptNumber) { this.attemptNumber = attemptNumber; }
+
+    public Double getTotalMarks() { return totalMarks; }
+    public void setTotalMarks(Double totalMarks) { this.totalMarks = totalMarks; }
+
+    public Double getObtainedMarks() { return obtainedMarks; }
+    public void setObtainedMarks(Double obtainedMarks) { this.obtainedMarks = obtainedMarks; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

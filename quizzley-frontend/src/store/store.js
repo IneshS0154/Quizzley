@@ -8,8 +8,3 @@ export const store = configureStore({
     quiz: quizReducer,
   },
 });
-<<<<<<< Updated upstream
-=======
-
-export default store;
->>>>>>> Stashed changes
